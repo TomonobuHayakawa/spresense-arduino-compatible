@@ -219,7 +219,12 @@ public:
    */
   err_t setRecorderMode(
       uint8_t device /**<  Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or
-                           AS_SETRECDR_STS_INPUTDEVICE_I2S. */
+      uint8_t device /**<  Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or AS_SETRECDR_STS_INPUTDEVICE_I2S_IN. */
+  );
+
+  err_t setRecorderMode(
+      uint8_t device, /**<  Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or AS_SETRECDR_STS_INPUTDEVICE_I2S_IN. */
+      int32_t gain    /**<  Set microphone gain for all microphones. */
   );
 
   /**
