@@ -54,13 +54,14 @@
  * e.g. $ echo arm_fill_f32 | sha1sum - | cut -b -8
  */
 
-#define DSP_INIT_FFT_F32          0xe5dd7e4c
-#define DSP_EXEC_FFT_F32          0x3bf3d7f3   
-#define DSP_FLUSH_FFT_F32         0xf6b19571
 
-#define DSP_INIT_FFT_Q15          0xe5dd7e40
-#define DSP_EXEC_FFT_Q15          0x3bf3d7f0
-#define DSP_FLUSH_FFT_Q15         0xf6b19570
+#define DSP_INIT_FFT_F32            0x626b3d5a
+#define DSP_EXEC_FFT_F32            0x3bf3d7f3
+#define DSP_FLUSH_FFT_F32           0x86bfc70d
+
+#define DSP_INIT_FFT_Q15            0xfae68b19
+#define DSP_EXEC_FFT_Q15            0x5b07a370
+#define DSP_FLUSH_FFT_Q15           0xe52689db
 
 
 #endif /* __EXAMPLES_FFT_RESOURCE_H */

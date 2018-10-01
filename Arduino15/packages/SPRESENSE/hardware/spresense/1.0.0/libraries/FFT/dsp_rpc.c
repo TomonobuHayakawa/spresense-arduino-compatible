@@ -154,7 +154,7 @@ arm_status init_fft_f32(uint16_t blockNum, uint8_t ifftFlag, uint8_t bitReverseF
   uint32_t *args = g_buffer;
 
   args[0] = DSP_INIT_FFT_F32;
-  args[1] = ARGVAL(blockNum);
+  args[1] = ARGVAL((blockNum*2)); /* "*2" is tentative code for DSP */
   args[2] = ARGVAL(ifftFlag);
   args[3] = ARGVAL(bitReverseFlag);
 
@@ -175,7 +175,7 @@ void exec_fft_f32(float32_t * pSrcA, float32_t * pDst)
 
 void send_fft_f32(float32_t * pSrcA, float32_t * pDst)
 {
-	puts("send");
+//	puts("send");
   uint32_t *args = g_buffer;
 
   args[0] = DSP_EXEC_FFT_F32;
@@ -188,7 +188,7 @@ void send_fft_f32(float32_t * pSrcA, float32_t * pDst)
 
 void rev_fft_f32(float32_t* pSrcA, float32_t* pDst)
 {
-	puts("rev");
+//	puts("rev");
 
 	uint32_t *args = g_buffer;
 
@@ -207,7 +207,7 @@ arm_status init_fft_q15(uint16_t blockNum, uint8_t ifftFlag, uint8_t bitReverseF
   uint32_t *args = g_buffer;
 
   args[0] = DSP_INIT_FFT_Q15;
-  args[1] = ARGVAL(blockNum);
+  args[1] = ARGVAL((blockNum*2)); /* "*2" is tentative code for DSP */
   args[2] = ARGVAL(ifftFlag);
   args[3] = ARGVAL(bitReverseFlag);
 
@@ -217,7 +217,7 @@ arm_status init_fft_q15(uint16_t blockNum, uint8_t ifftFlag, uint8_t bitReverseF
 
 void send_fft_q15(int16_t * pSrcA, int16_t * pDst)
 {
-	puts("send");
+//	puts("send");
   uint32_t *args = g_buffer;
 
   args[0] = DSP_EXEC_FFT_F32;
@@ -230,7 +230,7 @@ void send_fft_q15(int16_t * pSrcA, int16_t * pDst)
 
 void rev_fft_q15(int16_t* pSrcA, int16_t* pDst)
 {
-	puts("rev");
+//	puts("rev");
 
 	uint32_t *args = g_buffer;
 
