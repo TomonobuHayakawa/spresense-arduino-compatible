@@ -1,5 +1,5 @@
 /****************************************************************************
- * examples/fft/arm_dsp_rpc.c
+ * fft/dsp_rpc.c
  *
  *   Copyright (C) 2017 Sony Corporation.
  *
@@ -92,12 +92,12 @@ static int dsp_send(void *args)
 	return 0;
 }
 
-static int dsp_rev(void *args)
+static int dsp_recv(void *args)
 {
   int ret;
 
 	if(status == false){
-		puts("Norev");
+		puts("Norecv");
 		return 0;
 	}
   /* Wait for DSP math function is done */
@@ -186,7 +186,7 @@ void send_fft_f32(float32_t * pSrcA, float32_t * pDst)
 
 }
 
-void rev_fft_f32(float32_t* pSrcA, float32_t* pDst)
+void recv_fft_f32(float32_t* pSrcA, float32_t* pDst)
 {
 //	puts("rev");
 
@@ -197,7 +197,7 @@ void rev_fft_f32(float32_t* pSrcA, float32_t* pDst)
   args[2] = ARGPTR(pDst);
 
 
-  (void)dsp_rev(args);
+  (void)dsp_recv(args);
 
 }
 
@@ -228,7 +228,7 @@ void send_fft_q15(int16_t * pSrcA, int16_t * pDst)
 
 }
 
-void rev_fft_q15(int16_t* pSrcA, int16_t* pDst)
+void recv_fft_q15(int16_t* pSrcA, int16_t* pDst)
 {
 //	puts("rev");
 
@@ -239,7 +239,7 @@ void rev_fft_q15(int16_t* pSrcA, int16_t* pDst)
   args[2] = ARGPTR(pDst);
 
 
-  (void)dsp_rev(args);
+  (void)dsp_recv(args);
 
 }
 

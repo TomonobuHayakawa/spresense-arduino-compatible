@@ -1,5 +1,5 @@
 /****************************************************************************
- * examples/fft/dsp_rpc.h
+ * fft/dsp_rpc.h
  *
  *   Copyright (C) 2017 Sony Corporation.
  *
@@ -32,8 +32,8 @@
  *
  ****************************************************************************/
 
-#ifndef __EXAMPLES_FFT_DSP_RPC_H
-#define __EXAMPLES_FFT_DSP_RPC_H
+#ifndef __FFT_DSP_RPC_H
+#define __FFT_DSP_RPC_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,14 +49,14 @@ void unload_library(void);
 arm_status init_fft_f32(uint16_t blockNum, uint8_t ifftFlag, uint8_t bitReverseFlag);
 void exec_fft_f32(float32_t * pSrcA, float32_t * pDst);
 void send_fft_f32(float32_t * pSrcA, float32_t * pDst);
-void rev_fft_f32(float32_t * pSrcA, float32_t * pDst);
+void recv_fft_f32(float32_t * pSrcA, float32_t * pDst);
 
 arm_status init_fft_q15(uint16_t blockNum, uint8_t ifftFlag, uint8_t bitReverseFlag);
 void send_fft_q15(int16_t * pSrcA, int16_t * pDst);
-void rev_fft_q15(int16_t * pSrcA, int16_t * pDst);
+void recv_fft_q15(int16_t * pSrcA, int16_t * pDst);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __EXAMPLES_FFT_DSP_RPC_H */
+#endif /* __FFT_DSP_RPC_H */
