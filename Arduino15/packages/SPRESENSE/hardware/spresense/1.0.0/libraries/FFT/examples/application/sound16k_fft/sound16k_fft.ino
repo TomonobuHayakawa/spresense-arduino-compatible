@@ -25,9 +25,9 @@
 AudioClass *theAudio;
 File myFile;
 
-const int32_t recoding_frames = 2000;
-const int32_t buffer_sample = 768;
-//const int32_t buffer_sample = 256;
+const int32_t recoding_frames = 200;
+//const int32_t buffer_sample = 768;
+const int32_t buffer_sample = 256;
 const int32_t buffer_size = buffer_sample*sizeof(int16_t);
 
 char buffer[buffer_size];
@@ -44,6 +44,7 @@ float buffer_f[buffer_sample*2];
 #define INTERVAL_THRESHOLD   10
 
 
+/*-----------------------------------------------------------------*/
 bool detect_sound(int bottom, int top, float32_t* pdata )
 {
   static int continuity = 0;
@@ -58,6 +59,7 @@ bool detect_sound(int bottom, int top, float32_t* pdata )
   }
 
   for(int i= bottom;i<=top;i++){
+//      printf("%2.8f\n",*(pdata+i));
     if(*(pdata+i) > POWER_THRESHOLD){
 //      printf("!!%2.8f\n",*(pdata+i));
       continuity++;
@@ -66,7 +68,6 @@ bool detect_sound(int bottom, int top, float32_t* pdata )
         interval = INTERVAL_THRESHOLD;
         return true;
       }else{
-        puts("break");
         return false;  
       }
     }
@@ -75,7 +76,7 @@ bool detect_sound(int bottom, int top, float32_t* pdata )
   return false;  
 }
 
-
+/*-----------------------------------------------------------------*/
 /**
  *  @brief Setup audio device to capture PCM stream
  *
@@ -112,11 +113,7 @@ void setup()
   theAudio->startRecorder();
 }
 
-/**
- * @brief Capture frames of PCM data into buffer
- */
-float32_t output[MAX_BLOCKSIZE];
-
+/*-----------------------------------------------------------------*/
 void loop() {
 
   static int cnt = 0;
@@ -156,31 +153,31 @@ void loop() {
     }
 
     /* File write for debug. */
-//    int ret = myFile.write((uint8_t*)buffer_f, 256*4*2);
+//    int ret = myFile.write((uint8_t*)buffer_f, buffer_sample*4*2);
 
+    static float32_t output[2][MAX_BLOCKSIZE*2];
+    static int idx = -1;
+ 
     float32_t* in  = buffer_f;
-    float32_t* out = output;
-    rev_fft_f32(in, out);
 
-//  exec_fft_f32(in, out);
-    send_fft_f32(in, out);
+    for(int i=0;i+MAX_BLOCKSIZE<=buffer_sample;i=i+MAX_BLOCKSIZE){
+      int next = (idx+1)%2;
+//printf("i=%d\tidx=%d\tnext=%d\n",i,idx,next);
+      if(idx >= 0){
+        float32_t* out = &output[idx][0];
+        recv_fft_f32(in, out);
+      }
 
-    if(detect_bark(24,30,out)){
-      puts("Find sound!");
-    }
+      float32_t* out = &output[next][0];
+      send_fft_f32(in, out);
 
-    rev_fft_f32(in, out);
-    send_fft_f32(in+256, out);
-    
-    if(detect_bark(24,30,out)){
-      puts("Find sound!");
-    }
-
-    rev_fft_f32(in, out);
-    send_fft_f32(in+512, out);
-    
-    if(detect_bark(24,30,out)){
-      puts("Find sound!");
+      if(idx >= 0){
+        float32_t* out = &output[idx][0];
+        if(detect_sound(24,30,out)){
+          puts("Find sound!");
+        }
+      }
+      idx = next;
     }
 
     cnt++;
