@@ -61,11 +61,9 @@
 extern "C" void  outputDeviceCallback(uint32_t);
 
 /*--------------------------------------------------------------------------*/
-#define AUDIOLIB_LOG_DEBUG /**< Audil library log output definition */
-
 #define print_err printf
 
-#ifdef AUDIOLIB_LOG_DEBUG
+#ifdef BRD_DEBUG
 #define print_dbg(...) printf(__VA_ARGS__)
 #else
 #define print_dbg(x...)

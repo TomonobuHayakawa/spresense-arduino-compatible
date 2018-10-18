@@ -48,6 +48,68 @@ extern "C" void  input_device_callback(uint32_t);
 extern "C" void  output_device_callback(uint32_t);
 
 /****************************************************************************
+ * Debug Functions
+ ****************************************************************************/
+
+#ifdef BRD_DEBUG
+const char* error_msg[] =
+{
+   " "
+  ,"STATE VIOLATION"
+  ,"PACKET LENGTH ERROR" 
+  ,"COMMAND CODE ERROR"
+  ,"COMMAND NOT SUPPOT"
+  ,"AUDIO POWER ON ERROR"
+  ,"AUDIO POWER OFF ERROR"
+  ,"DSP LOAD ERROR"
+  ,"DSP UNLOAD ERROR"
+  ,"DSP VERSION ERROR"
+  ,"SET AUDIO DATA PATH ERROR" 
+  ,"CLEAR AUDIO DATA PATH ERROR"
+  ,"NOT AUDIO DATA PATH"
+  ,"DECODER LIB INITIALIZE ERROR" 
+  ,"ENCODER LIB INITIALIZE ERROR"
+  ,"FILTER LIB INITIALIZE ERROR"
+  ," "
+  ,"COMMAND PARAM CODEC TYPE"
+  ," " 
+  ,"COMMAND PARAM CHANNEL NUMBER" 
+  ,"COMMAND PARAM SAMPLING RATE"
+  ,"COMMAND PARAM BIT RATE"
+  ,"COMMAND PARAM BIT LENGTH"
+  ,"COMMAND PARAM COMPLEXITY"
+  ,"COMMAND PARAM ACTIVE PLAYER"
+  ,"COMMAND PARAM INPUT DEVICE"
+  ,"COMMAND PARAM OUTPUT DEVICE"
+  ,"COMMAND PARAM INPUT HANDLER"
+  ,"COMMAND PARAM CONFIG TABLE"
+  ,"COMMAND PARAM WITH MFE" 
+  ,"COMMAND PARAM WITH MPP"
+  ," " 
+  ," "
+  ," "
+  ," "
+  ," "
+  ," "
+  ,"COMMAND PARAM INPUT DB "
+  ," "
+  ," "
+  ,"DMAC INITIALIZE ERROR "
+  ,"DMAC READ ERROR"
+  ,"CHECK MEMORY POOL ERROR"
+  ,"SIMPLE FIFO UNDERFLOW "
+  ,"SET MIC GAIN ERROR"
+  ,"SET OUTPUT SELECT ERROR"
+  ,"INIT CLEAR STEREO ERROR"
+  ,"SET VOLUME ERROR"
+  ,"SET VOLUME MUTE ERROR"
+  ,"SET BEEP ERROR"
+  ,"QUEUE OPERATION ERROR"
+  ,"COMMAND PARAM RENDERINGCLK"
+};
+#endif
+
+/****************************************************************************
  * Common API on Audio Class
  ****************************************************************************/
 err_t AudioClass::begin(void)
@@ -95,7 +157,7 @@ extern "C" {
 
 void attentionCallback(const ErrorAttentionParam *attparam)
 {
-  print_dbg("Attention!! Level 0x%x Code 0x%x\n", attparam->error_code, attparam->error_att_sub_code);
+  print_err("Attention!! Level 0x%x Code 0x%x\n", attparam->error_code, attparam->error_att_sub_code);
 }
 
 }
@@ -294,6 +356,7 @@ err_t AudioClass::powerOn(void)
   if (result.header.result_code != AUDRLT_STATUSCHANGED)
     {
       print_err("ERROR: Command (%x) fails. Result code(%x)\n", command.header.command_code, result.header.result_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -317,6 +380,7 @@ err_t AudioClass::powerOff(void)
   if (result.header.result_code != AUDRLT_STATUSCHANGED)
     {
       print_err("ERROR: Command (%x) fails. Result code(%x)\n", command.header.command_code, result.header.result_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -339,6 +403,7 @@ err_t AudioClass::setReadyMode(void)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -403,6 +468,7 @@ err_t AudioClass::setPlayerMode(uint8_t device)
   if (result.header.result_code != AUDRLT_STATUSCHANGED)
     {
       print_err("ERROR: Command (%x) fails. Result code(%x), subcode = %x\n", command.header.command_code, result.header.result_code,result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -462,6 +528,7 @@ err_t AudioClass::initPlayer(PlayerId id, uint8_t codec_type, const char* codec_
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -488,6 +555,7 @@ err_t AudioClass::startPlayer(PlayerId id)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -515,6 +583,7 @@ err_t AudioClass::setBeep(char en, short vol, short freq)
     {
       print_err("ERROR: Command (%x) fails. Result code(%x) Error code(0x%x)\n",
                 command.header.command_code, result.header.result_code, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
 
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
@@ -548,6 +617,7 @@ err_t AudioClass::stopPlayer(PlayerId id, uint8_t mode)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -579,6 +649,7 @@ err_t AudioClass::setVolume(int master_db)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -607,6 +678,7 @@ err_t AudioClass::setVolume(int master, int player0, int player1)
     {
       printf("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -635,6 +707,7 @@ err_t AudioClass::setLRgain(PlayerId id, unsigned char l_gain, unsigned char r_g
     {
       printf("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -722,6 +795,7 @@ err_t AudioClass::setRecorderMode(uint8_t input_device, int32_t gain)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -754,6 +828,7 @@ err_t AudioClass::init_recorder_wav(AudioCommand* command, uint32_t sampling_rat
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
                 command->header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -788,6 +863,7 @@ err_t AudioClass::init_recorder_mp3(AudioCommand* command, uint32_t sampling_rat
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
                 command->header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -811,6 +887,7 @@ err_t AudioClass::init_recorder_opus(AudioCommand* command, uint32_t sampling_ra
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
                 command->header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -832,6 +909,7 @@ err_t AudioClass::init_recorder_pcm(AudioCommand* command, uint32_t sampling_rat
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
                 command->header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -925,6 +1003,7 @@ err_t AudioClass::startRecorder(void)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -951,6 +1030,7 @@ err_t AudioClass::stopRecorder(void)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -1160,6 +1240,7 @@ err_t AudioClass::setRenderingClockMode(AsClkMode mode)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -1215,7 +1296,7 @@ err_t AudioClass::set_output(int device)
     {
       sleep(1);
       print_err("ERROR: Command (%x) fails. Result code(%x), subcode = %x\n", command.header.command_code, result.header.result_code,result.error_response_param.error_code);
-
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
@@ -1333,6 +1414,7 @@ err_t AudioClass::init_mic_gain(int dev, int gain)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
