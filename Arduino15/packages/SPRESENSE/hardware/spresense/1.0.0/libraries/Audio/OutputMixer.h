@@ -46,6 +46,14 @@
 #define OUTPUTMIXER_ECODE_OK            0
 #define OUTPUTMIXER_ECODE_COMMAND_ERROR 1 
 
+/**
+ * OutputMixer capturing clock mode.
+ */
+
+#define OUTPUTMIXER_RNDCLK_NORMAL (0)
+#define OUTPUTMIXER_RNDCLK_HIRESO (1)
+
+
 /*--------------------------------------------------------------------------*/
 
 /**
@@ -148,6 +156,18 @@ public:
       int master,  /**< Master volume. -1020(-102db) - 120(12db) */
       int player0, /**< Player0 volume. -1020(-102db) - 120(12db) */
       int player1  /**< Plyaer1 volume. -1020(-102db) - 120(12db) */
+  );
+
+  /**
+   * @brief Set Rendering clock mode
+   *
+   * @details This API set internal audio renderer clock mode to Normal(48kHz) or HiReso(192kHz).
+   *          Default on boot is Normal, if you set HiReso, call this API with HiReso set.
+   *
+   */
+
+  bool setRenderingClkMode(
+      uint8_t clk_mode /**< Set clock mode. OUTPUTMIXER_RNDCLK_NORMAL, OUTPUTMIXER_RNDCLK_HIRESO */
   );
 
 private:

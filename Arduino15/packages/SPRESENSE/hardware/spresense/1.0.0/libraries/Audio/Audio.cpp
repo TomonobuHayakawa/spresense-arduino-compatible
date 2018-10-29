@@ -56,7 +56,7 @@ const char* error_msg[] =
 {
    " "
   ,"STATE VIOLATION"
-  ,"PACKET LENGTH ERROR" 
+  ,"PACKET LENGTH ERROR"
   ,"COMMAND CODE ERROR"
   ,"COMMAND NOT SUPPOT"
   ,"AUDIO POWER ON ERROR"
@@ -64,16 +64,16 @@ const char* error_msg[] =
   ,"DSP LOAD ERROR"
   ,"DSP UNLOAD ERROR"
   ,"DSP VERSION ERROR"
-  ,"SET AUDIO DATA PATH ERROR" 
+  ,"SET AUDIO DATA PATH ERROR"
   ,"CLEAR AUDIO DATA PATH ERROR"
   ,"NOT AUDIO DATA PATH"
-  ,"DECODER LIB INITIALIZE ERROR" 
+  ,"DECODER LIB INITIALIZE ERROR"
   ,"ENCODER LIB INITIALIZE ERROR"
   ,"FILTER LIB INITIALIZE ERROR"
   ," "
   ,"COMMAND PARAM CODEC TYPE"
-  ," " 
-  ,"COMMAND PARAM CHANNEL NUMBER" 
+  ," "
+  ,"COMMAND PARAM CHANNEL NUMBER"
   ,"COMMAND PARAM SAMPLING RATE"
   ,"COMMAND PARAM BIT RATE"
   ,"COMMAND PARAM BIT LENGTH"
@@ -83,9 +83,8 @@ const char* error_msg[] =
   ,"COMMAND PARAM OUTPUT DEVICE"
   ,"COMMAND PARAM INPUT HANDLER"
   ,"COMMAND PARAM CONFIG TABLE"
-  ,"COMMAND PARAM WITH MFE" 
+  ,"COMMAND PARAM WITH MFE"
   ,"COMMAND PARAM WITH MPP"
-  ," " 
   ," "
   ," "
   ," "
@@ -155,7 +154,7 @@ err_t AudioClass::end(void)
  ****************************************************************************/
 extern "C" {
 
-void attentionCallback(const ErrorAttentionParam *attparam)
+static void attentionCallback(const ErrorAttentionParam *attparam)
 {
   print_err("Attention!! Level 0x%x Code 0x%x\n", attparam->error_code, attparam->error_att_sub_code);
 }
@@ -203,15 +202,16 @@ err_t AudioClass::begin_player(void)
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
-  player_create_param.msgq_id.player = MSGQ_AUD_SUB_PLY;
-  player_create_param.msgq_id.mng    = MSGQ_AUD_MGR;
-  player_create_param.msgq_id.mixer  = MSGQ_AUD_OUTPUT_MIX;
-  player_create_param.msgq_id.dsp    = MSGQ_AUD_DSP;
-  player_create_param.pool_id.es     = DEC_ES_SUB_BUF_POOL;
-  player_create_param.pool_id.pcm    = REND_PCM_SUB_BUF_POOL;
-  player_create_param.pool_id.dsp    = DEC_APU_CMD_POOL;
+  player_create_param.msgq_id.player   = MSGQ_AUD_SUB_PLY;
+  player_create_param.msgq_id.mng      = MSGQ_AUD_MGR;
+  player_create_param.msgq_id.mixer    = MSGQ_AUD_OUTPUT_MIX;
+  player_create_param.msgq_id.dsp      = MSGQ_AUD_DSP;
+  player_create_param.pool_id.es       = DEC_ES_SUB_BUF_POOL;
+  player_create_param.pool_id.pcm      = REND_PCM_SUB_BUF_POOL;
+  player_create_param.pool_id.dsp      = DEC_APU_CMD_POOL;
+  player_create_param.pool_id.src_work = SRC_WORK_SUB_BUF_POOL;
 
-  act_rst = AS_CreatePlayer(AS_PLAYER_ID_1, &player_create_param);
+  act_rst = AS_CreatePlayerMulti(AS_PLAYER_ID_1, &player_create_param, NULL);
   if (!act_rst)
     {
       print_err("AS_CreatePlayer failed. system memory insufficient!\n");
@@ -228,7 +228,7 @@ err_t AudioClass::begin_player(void)
   output_mix_create_param.pool_id.render_path0_filter_dsp = PF0_APU_CMD_POOL;
   output_mix_create_param.pool_id.render_path1_filter_dsp = PF1_APU_CMD_POOL;
 
-  act_rst = AS_CreateOutputMixer(&output_mix_create_param);
+  act_rst = AS_CreateOutputMixer(&output_mix_create_param, NULL);
   if (!act_rst)
     {
       print_err("AS_CreateOutputMix failed. system memory insufficient!\n");
@@ -264,7 +264,7 @@ err_t AudioClass::begin_recorder(void)
   recorder_act_param.pool_id.output        = OUTPUT_BUF_POOL;
   recorder_act_param.pool_id.dsp           = ENC_APU_CMD_POOL;
 
-  if (!AS_CreateMediaRecorder(&recorder_act_param))
+  if (!AS_CreateMediaRecorder(&recorder_act_param, NULL))
     {
       print_err("AS_CreateMediaRecorder failed. system memory insufficient!\n");
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
@@ -676,7 +676,7 @@ err_t AudioClass::setVolume(int master, int player0, int player1)
 
   if (result.header.result_code != AUDRLT_SETVOLUMECMPLT)
     {
-      printf("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
       print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
@@ -705,7 +705,7 @@ err_t AudioClass::setLRgain(PlayerId id, unsigned char l_gain, unsigned char r_g
 
   if (result.header.result_code != AUDRLT_SETGAIN_CMPLT)
     {
-      printf("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
       print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
@@ -714,12 +714,12 @@ err_t AudioClass::setLRgain(PlayerId id, unsigned char l_gain, unsigned char r_g
   return AUDIOLIB_ECODE_OK;
 }
 
-#define WRITE_FRAME_NUM 5 
+#define WRITE_FRAME_NUM 5
 /*--------------------------------------------------------------------------*/
 err_t AudioClass::writeFrames(PlayerId id, int fd)
 {
   int ret = AUDIOLIB_ECODE_OK;
-  char *buf = (id == Player0) ? m_es_player0_buf : m_es_player1_buf; 
+  char *buf = (id == Player0) ? m_es_player0_buf : m_es_player1_buf;
   CMN_SimpleFifoHandle *handle = (id == Player0) ? &m_player0_simple_fifo_handle : &m_player1_simple_fifo_handle;
   uint32_t write_size = (id == Player0) ? FIFO_FRAME_SIZE : WRITE_FIFO_FRAME_SIZE;
 
@@ -736,7 +736,7 @@ err_t AudioClass::writeFrames(PlayerId id, int fd)
 err_t AudioClass::writeFrames(PlayerId id, File& myFile)
 {
   int ret = AUDIOLIB_ECODE_OK;
-  char *buf = (id == Player0) ? m_es_player0_buf : m_es_player1_buf; 
+  char *buf = (id == Player0) ? m_es_player0_buf : m_es_player1_buf;
   CMN_SimpleFifoHandle *handle = (id == Player0) ? &m_player0_simple_fifo_handle : &m_player1_simple_fifo_handle;
   uint32_t write_size = (id == Player0) ? FIFO_FRAME_SIZE : WRITE_FIFO_FRAME_SIZE;
 
@@ -757,7 +757,7 @@ err_t AudioClass::writeFrames(PlayerId id, File& myFile)
 #define m_recorder_simple_fifo_buf m_player0_simple_fifo_buf
 #define m_es_recorder_buf m_es_player0_buf
 
-err_t AudioClass::setRecorderMode(uint8_t input_device, int32_t gain)
+err_t AudioClass::setRecorderMode(uint8_t input_device, int32_t input_gain)
 {
   const NumLayout layout_no = MEM_LAYOUT_RECORDER;
 
@@ -799,7 +799,7 @@ err_t AudioClass::setRecorderMode(uint8_t input_device, int32_t gain)
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
 
-  if (init_mic_gain(input_device, gain) != AUDIOLIB_ECODE_OK)
+  if (init_mic_gain(input_device, input_gain) != AUDIOLIB_ECODE_OK)
     {
       print_err("Mic init error!");
     }
@@ -810,7 +810,8 @@ err_t AudioClass::setRecorderMode(uint8_t input_device, int32_t gain)
 /*--------------------------------------------------------------------------*/
 err_t AudioClass::setRecorderMode(uint8_t input_device)
 {
-	return setRecorderMode(input_device,0);
+
+  return setRecorderMode(input_device, 0);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -939,7 +940,7 @@ err_t AudioClass::initRecorder(uint8_t codec_type, const char *codec_path,
 err_t AudioClass::initRecorder(uint8_t codec_type, const char *codec_path,
                                uint32_t sampling_rate, uint8_t bit_length, uint8_t channel)
 {
-  
+
   if (!check_encode_dsp(codec_type, codec_path, sampling_rate))
     {
       return AUDIOLIB_ECODE_FILEACCESS_ERROR;
@@ -1054,7 +1055,7 @@ err_t AudioClass::closeOutputFile(int fd)
 
   return true;
 }
-#endif 
+#endif
 
 /*--------------------------------------------------------------------------*/
 err_t AudioClass::closeOutputFile(File& myFile)
@@ -1321,7 +1322,7 @@ err_t AudioClass::write_fifo(int fd, char *buf, uint32_t write_size, CMN_SimpleF
       return AUDIOLIB_ECODE_FILEACCESS_ERROR;
     }
 
-       print_dbg("size = %d!\n",ret);
+  print_dbg("size = %d!\n",ret);
 
   if (CMN_SimpleFifoOffer(handle, (const void*)(buf), ret) == 0)
     {
@@ -1427,7 +1428,10 @@ err_t AudioClass::init_mic_gain(int dev, int gain)
 bool AudioClass::check_decode_dsp(uint8_t codec_type, const char *path)
 {
   char fullpath[32];
-  
+  struct stat buf;
+  int retry;
+  int ret = 0;
+
   switch (codec_type)
     {
       case AS_CODECTYPE_MP3:
@@ -1452,6 +1456,24 @@ bool AudioClass::check_decode_dsp(uint8_t codec_type, const char *path)
         break;
     }
 
+  if (0 == strncmp("/mnt/sd0", path, 8))
+    {
+      /* In case that SD card isn't inserted, it times out at max 2 sec */
+      for (retry = 0; retry < 20; retry++) {
+        ret = stat("/mnt/sd0", &buf);
+        if (ret == 0)
+          {
+            break;
+          }
+        usleep(100 * 1000); // 100 msec
+      }
+      if (ret)
+        {
+          print_err("SD card is not present.\n");
+          return false;
+        }
+    }
+
   FILE *fp = fopen(fullpath, "r");
   if (fp == NULL)
     {
@@ -1468,6 +1490,9 @@ bool AudioClass::check_decode_dsp(uint8_t codec_type, const char *path)
 bool AudioClass::check_encode_dsp(uint8_t codec_type, const char *path, uint32_t fs)
 {
   char fullpath[32];
+  struct stat buf;
+  int retry;
+  int ret = 0;
 
   switch (codec_type)
     {
@@ -1493,6 +1518,24 @@ bool AudioClass::check_encode_dsp(uint8_t codec_type, const char *path, uint32_t
 
       default:
         break;
+    }
+
+  if (0 == strncmp("/mnt/sd0", path, 8))
+    {
+      /* In case that SD card isn't inserted, it times out at max 2 sec */
+      for (retry = 0; retry < 20; retry++) {
+        ret = stat("/mnt/sd0", &buf);
+        if (ret == 0)
+          {
+            break;
+          }
+        usleep(100 * 1000); // 100 msec
+      }
+      if (ret)
+        {
+          print_err("SD card is not present.\n");
+          return false;
+        }
     }
 
   FILE *fp = fopen(fullpath, "r");

@@ -17,6 +17,7 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <SDHCI.h>
 #include <MediaRecorder.h>
 #include <MemoryUtil.h>
 
@@ -66,6 +67,10 @@ void setup()
   theRecorder->begin();
 
   puts("initialization MediaRecorder");
+
+  /* Set capture clock */
+
+  theRecorder->setCapturingClkMode(MEDIARECORDER_CAPCLK_NORMAL);
 
   /* Activate Objects. Set output device to Speakers/Headphones */
 
@@ -157,7 +162,11 @@ void loop() {
 
   getEs();
 
-  usleep(1);
+  /* This sleep is adjusted by the time to write the audio stream file.
+     Please adjust in according with the processing contents
+     being processed at the same time by Application.
+  */
+  usleep(10000);
   cnt++;
 
   return;

@@ -73,6 +73,13 @@
 #define MEDIARECORDER_BUF_FRAME_SIZE (768 * 2 * 8)
 #define MEDIARECORDER_BUF_SIZE (MEDIARECORDER_BUF_FRAME_NUM * MEDIARECORDER_BUF_FRAME_SIZE)
 
+/**
+ * MediaRecorder capturing clock mode.
+ */
+
+#define MEDIARECORDER_CAPCLK_NORMAL (0)
+#define MEDIARECORDER_CAPCLK_HIRESO (1)
+
 /*--------------------------------------------------------------------------*/
 
 /**
@@ -251,6 +258,17 @@ public:
 
   err_t writeWavHeader(File& myfile);
 
+  /**
+   * @brief Set capturing clock mode
+   *
+   * @details This API set internal audio capture clock mode to Normal(48kHz) or HiReso(192kHz).
+   *          Default on boot is Normal, if you set HiReso, call this API with HiReso set.
+   *
+   */
+
+  bool setCapturingClkMode(
+      uint8_t clk_mode /**< Set clock mode. MEDIARECORDER_CAPCLK_NORMAL, MEDIARECORDER_CAPCLK_HIRESO */
+  );
 
 private:
 

@@ -38,7 +38,16 @@ void  output_device_callback(uint32_t size)
     /* do nothing */
 }
 
-/****************************************************************************
+extern "C" {
+
+static void attentionCallback(const ErrorAttentionParam *attparam)
+{
+  print_err("Attention!! Level 0x%x Code 0x%x\n", attparam->error_code, attparam->error_att_sub_code);
+}
+
+}
+
+****************************************************************************
  * Public API on MediaRecorder Class
  ****************************************************************************/
 
@@ -62,7 +71,7 @@ err_t MediaRecorder::begin(void)
   recorder_create_param.pool_id.output   = OUTPUT_BUF_POOL;
   recorder_create_param.pool_id.dsp      = ENC_APU_CMD_POOL;
 
-  result = AS_CreateMediaRecorder(&recorder_create_param);
+  result = AS_CreateMediaRecorder(&recorder_create_param, attentionCallback);
   if (!result)
     {
       print_err("Error: AS_CreateMediaRecorder() failure!\n");
@@ -408,6 +417,9 @@ bool MediaRecorder::check_encode_dsp(uint8_t codec_type, const char *path, uint3
 {
   char fullpath[32];
   cxd56_audio_clkmode_t clk = CXD56_AUDIO_CLKMODE_NORMAL;
+  struct stat buf;
+  int retry;
+  int ret = 0;
   
   switch (codec_type)
     {
@@ -432,6 +444,24 @@ bool MediaRecorder::check_encode_dsp(uint8_t codec_type, const char *path, uint3
 
       default:
         break;
+    }
+
+  if (0 == strncmp("/mnt/sd0", path, 8))
+    {
+      /* In case that SD card isn't inserted, it times out at max 2 sec */
+      for (retry = 0; retry < 20; retry++) {
+        ret = stat("/mnt/sd0", &buf);
+        if (ret == 0)
+          {
+            break;
+          }
+        usleep(100 * 1000); // 100 msec
+      }
+      if (ret)
+        {
+          print_err("SD card is not present.\n");
+          return false;
+        }
     }
 
   FILE *fp = fopen(fullpath, "r");
@@ -496,6 +526,27 @@ bool MediaRecorder::deactivateBaseband(void)
   if (error_code != CXD56_AUDIO_ECODE_OK)
     {
       print_err("cxd56_audio_poweroff() error! [%d]\n", error_code);
+      return false;
+    }
+
+  return true;
+}
+
+/*--------------------------------------------------------------------------*/
+bool MediaRecorder::setCapturingClkMode(uint8_t clk_mode)
+{
+  CXD56_AUDIO_ECODE error_code = CXD56_AUDIO_ECODE_OK;
+
+  cxd56_audio_clkmode_t mode;
+
+  mode = (clk_mode == MEDIARECORDER_CAPCLK_NORMAL)
+           ? CXD56_AUDIO_CLKMODE_NORMAL : CXD56_AUDIO_CLKMODE_HIRES;
+
+  error_code = cxd56_audio_set_clkmode(mode);
+
+  if (error_code != CXD56_AUDIO_ECODE_OK)
+    {
+      print_err("cxd56_audio_set_clkmode() error! [%d]\n", error_code);
       return false;
     }
 

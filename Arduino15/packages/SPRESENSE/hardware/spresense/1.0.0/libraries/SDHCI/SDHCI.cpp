@@ -76,6 +76,25 @@ static char* fullpathname(char* buf, int bufsize, const char * filepath)
   return NULL;
 }
 
+boolean SDClass::begin(uint8_t dummy)
+{
+  struct stat buf;
+  int retry;
+  int ret;
+
+  (void)dummy;
+
+  /* In case that SD card isn't inserted, it times out at max 2 sec */
+  for (retry = 0; retry < 20; retry++) {
+    ret = stat(SD_MOUNT_POINT, &buf);
+    if (ret == 0) {
+      return true;
+    }
+    usleep(100 * 1000); // 100 msec
+  }
+  return false;
+}
+
 File SDClass::open(const char *filepath, uint8_t mode) {
   return File(filepath, mode);
 }

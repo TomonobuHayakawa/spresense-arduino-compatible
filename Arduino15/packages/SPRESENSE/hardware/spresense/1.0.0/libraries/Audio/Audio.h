@@ -190,16 +190,31 @@ public:
    *          or digital microphone and assign the microphone channel.
    *          Refer to the document for the setting value.
    *          If you change the settings, import sdk again.
+   *
+   *          Recording Mic-gain is 0dB fixed.
    * 
    */
   err_t setRecorderMode(
-      uint8_t device /**<  Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or
-      uint8_t device /**<  Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or AS_SETRECDR_STS_INPUTDEVICE_I2S_IN. */
+      uint8_t input_device /**< Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or
+                                AS_SETRECDR_STS_INPUTDEVICE_I2S. */
   );
 
+  /**
+   * @brief Set Audio Library Mode to Sound Recorder.
+   *
+   * @details This function works as same as "setRecorderMode(uint8_t)",
+   *          but you are able to set Mic-gain by parameter "mic_gain".
+   *          If you would like to set recording mic-gain, use this API instead of  setRecorderMode(uint8_t).
+   *
+   */
+
   err_t setRecorderMode(
-      uint8_t device, /**<  Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or AS_SETRECDR_STS_INPUTDEVICE_I2S_IN. */
-      int32_t gain    /**<  Set microphone gain for all microphones. */
+      uint8_t input_device, /**< Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or
+                                 AS_SETRECDR_STS_INPUTDEVICE_I2S. */
+      int32_t input_gain    /**< Input gain : value range
+                                 Analog Mic  -7850:-78.50dB, ... , -5:-0.05dB, 0:0dB, 5:+0.5dB, ... , 210:+21.0dB
+                                 Digital Mic -7850:-78.50dB, ... , -5:-0.05dB, 0:0dB (Max is 0dB.)
+                                 set #AS_MICGAIN_HOLD is keep setting. */
   );
 
   /**
