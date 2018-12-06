@@ -202,8 +202,9 @@ err_t AudioClass::begin_player(void)
   player_create_param.pool_id.es     = DEC_ES_MAIN_BUF_POOL;
   player_create_param.pool_id.pcm    = REND_PCM_BUF_POOL;
   player_create_param.pool_id.dsp    = DEC_APU_CMD_POOL;
+  player_create_param.pool_id.src_work = SRC_WORK_MAIN_BUF_POOL;
 
-  int act_rst = AS_CreatePlayer(AS_PLAYER_ID_0, &player_create_param);
+  int act_rst = AS_CreatePlayerMulti(AS_PLAYER_ID_0, &player_create_param);
   if (!act_rst)
     {
       print_err("AS_CreatePlayer failed. system memory insufficient!\n");
