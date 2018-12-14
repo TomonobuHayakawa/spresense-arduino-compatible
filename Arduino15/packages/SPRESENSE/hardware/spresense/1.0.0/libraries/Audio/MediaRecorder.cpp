@@ -47,7 +47,7 @@ static void attentionCallback(const ErrorAttentionParam *attparam)
 
 }
 
-****************************************************************************
+/****************************************************************************
  * Public API on MediaRecorder Class
  ****************************************************************************/
 
@@ -377,7 +377,7 @@ err_t MediaRecorder::readFrames(uint8_t* p_buffer, uint32_t buffer_size, uint32_
     {
       if (data_size > buffer_size)
         {
-          print_dbg("WARNING: Insufficient buffer area.\n");
+          print_err("WARNING: Insufficient buffer area.\n");
           poll_size = (size_t)buffer_size;
           rst = MEDIARECORDER_ECODE_INSUFFICIENT_BUFFER_AREA;
         }

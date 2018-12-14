@@ -202,9 +202,8 @@ err_t AudioClass::begin_player(void)
   player_create_param.pool_id.es     = DEC_ES_MAIN_BUF_POOL;
   player_create_param.pool_id.pcm    = REND_PCM_BUF_POOL;
   player_create_param.pool_id.dsp    = DEC_APU_CMD_POOL;
-  player_create_param.pool_id.src_work = SRC_WORK_MAIN_BUF_POOL;
 
-  int act_rst = AS_CreatePlayerMulti(AS_PLAYER_ID_0, &player_create_param);
+  int act_rst = AS_CreatePlayer(AS_PLAYER_ID_0, &player_create_param);
   if (!act_rst)
     {
       print_err("AS_CreatePlayer failed. system memory insufficient!\n");
@@ -1137,7 +1136,6 @@ err_t AudioClass::readFrames(char* p_buffer, uint32_t buffer_size, uint32_t* rea
     }
 
   size_t data_size = CMN_SimpleFifoGetOccupiedSize(&m_recorder_simple_fifo_handle);
-  print_dbg("dsize = %d\n", data_size);
 
   *read_size = 0;
   size_t poll_size = 0;
@@ -1145,7 +1143,7 @@ err_t AudioClass::readFrames(char* p_buffer, uint32_t buffer_size, uint32_t* rea
     {
       if (data_size > buffer_size)
         {
-          print_dbg("WARNING: Insufficient buffer area.\n");
+          print_err("WARNING: Insufficient buffer area.\n");
           poll_size = (size_t)buffer_size;
           rst = AUDIOLIB_ECODE_INSUFFICIENT_BUFFER_AREA;
         }
