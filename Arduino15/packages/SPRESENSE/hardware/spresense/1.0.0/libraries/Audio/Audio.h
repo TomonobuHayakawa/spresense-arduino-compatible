@@ -30,8 +30,8 @@
 #define Audio_h
 
 #include <pins_arduino.h>
-#include <File.h>
 
+class File;
 
 // #ifdef __cplusplus
 
@@ -792,8 +792,6 @@ private:
   int                           m_codec_type;
 
   AudioAttentionCb m_attention_callback;
-
-  File theFile; /* for  auto file read */
 
   /* Private Functions */
 
