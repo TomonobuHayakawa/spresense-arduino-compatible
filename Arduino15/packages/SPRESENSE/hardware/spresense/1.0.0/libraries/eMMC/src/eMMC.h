@@ -1,6 +1,6 @@
 /*
  *  eMMC.h - Spresense Arduino eMMC library
- *  Copyright 2018 Sony Semiconductor Solutions Corporation
+ *  Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,12 @@
 
 #ifndef __eMMC_H__
 #define __eMMC_H__
+
+/**
+ * @defgroup emmc eMMC Library API
+ * @brief API for using eMMC
+ * @{
+ */
 
 /**
  * @file eMMC.h
@@ -80,5 +86,7 @@ private:
 };
 
 extern eMMCClass eMMC;
+
+/** @} emmc */
 
 #endif

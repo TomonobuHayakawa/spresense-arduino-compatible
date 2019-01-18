@@ -1,6 +1,6 @@
 /*
  *  eMMC.cpp - Spresense Arduino eMMC library
- *  Copyright 2018 Sony Semiconductor Solutions Corporation
+ *  Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

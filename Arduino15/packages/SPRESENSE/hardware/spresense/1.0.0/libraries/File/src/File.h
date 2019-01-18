@@ -1,6 +1,6 @@
 /*
  *  File.h - Spresense Arduino File library
- *  Copyright 2018 Sony Semiconductor Solutions Corporation
+ *  Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,12 @@
 
 #ifndef __FILE_H__
 #define __FILE_H__
+
+/**
+ * @defgroup file File Library API
+ * @brief API for file operations
+ * @{
+ */
 
 /**
  * @file File.h
@@ -122,7 +128,7 @@ public:
   * @param [in] nbyte The number of elements in buf.
   * @return The total number of bytes successfully read, or -1 if none is available 
   */
-  int read(void *buf, uint16_t nbyte);
+  int read(void *buf, size_t nbyte);
 
  /**
   * @brief Seek to a new position in the file.
@@ -187,5 +193,7 @@ public:
 
   using Print::write;
 };
+
+/** @} file */
 
 #endif

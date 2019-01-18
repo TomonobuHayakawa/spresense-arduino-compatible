@@ -21,7 +21,7 @@
 #define __SD_H__
 
 /**
- * @defgroup storage Storage Library API
+ * @defgroup sdhci SD-card Library API
  * @brief API for using SD Card
  * @{
  */
@@ -86,6 +86,6 @@ private:
   void *mshandle;
 };
 
-/** @} storage */
+/** @} sdhci */
 
 #endif

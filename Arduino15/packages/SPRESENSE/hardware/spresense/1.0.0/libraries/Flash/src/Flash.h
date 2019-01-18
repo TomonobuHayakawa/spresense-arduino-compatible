@@ -1,6 +1,6 @@
 /*
  *  Flash.h - Spresense Arduino Flash library
- *  Copyright 2018 Sony Semiconductor Solutions Corporation
+ *  Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,12 @@
 
 #ifndef __FLASH_H__
 #define __FLASH_H__
+
+/**
+ * @defgroup flash Flash Library API
+ * @brief API for using SPI-Flash
+ * @{
+ */
 
 /**
  * @file Flash.h
@@ -48,5 +54,7 @@ public:
 };
 
 extern FlashClass Flash;
+
+/** @} flash */
 
 #endif

@@ -6,12 +6,15 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-FlashClass	KEYWORD1
-Flash	KEYWORD1
+SDClass	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
+
+beginUsbMsc	KEYWORD2
+endUsbMsc	KEYWORD2
+format	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

@@ -1,6 +1,6 @@
 /*
- *  vFile.cpp - Spresense Arduino virtual file system library
- *  Copyright 2018 Sony Semiconductor Solutions Corporation
+ *  File.cpp - Spresense Arduino file library
+ *  Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -18,11 +18,11 @@
  */
 
 /**
- * @file vFile.cpp
+ * @file File.cpp
  * @author Sony Semiconductor Solutions Corporation
- * @brief SPRESENSE Arduino virtual file sytem library
+ * @brief SPRESENSE Arduino file library
  * 
- * @details The vFile library allows for reading from and writing to VFS
+ * @details The File library allows for reading from and writing a file
  */
 
 #include <sdk/config.h>
@@ -102,13 +102,17 @@ File::File(const char *name, uint8_t mode)
     fmode += fplus;
 
     _fd = ::fopen(name, fmode.c_str());
-    setvbuf(_fd, NULL, _IOLBF, STDIO_BUFFER_SIZE);
+    if (_fd != NULL) {
+      setvbuf(_fd, NULL, _IOLBF, STDIO_BUFFER_SIZE);
+    }
   }
 
   _name = strdup(name);
-  _size = stat.st_size;
-  ::fseek(_fd, 0, SEEK_CUR);
-  _curpos = ::ftell(_fd);
+  if (_fd != NULL) {
+    _size = stat.st_size;
+    ::fseek(_fd, 0, SEEK_CUR);
+    _curpos = ::ftell(_fd);
+  }
 }
 
 File::File(void):
@@ -179,7 +183,7 @@ void File::flush() {
     fflush(_fd);
 }
 
-int File::read(void *buf, uint16_t nbyte) {
+int File::read(void *buf, size_t nbyte) {
   int ret;
 
   if (_fd) {
