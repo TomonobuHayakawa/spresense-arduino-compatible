@@ -1,6 +1,6 @@
 /*
  *  Storage.h - Spresense Arduino Storage library
- *  Copyright 2018 Sony Semiconductor Solutions Corporation
+ *  Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,12 @@
 
 #ifndef __STORAGE_H__
 #define __STORAGE_H__
+
+/**
+ * @defgroup storage Storage Library API
+ * @brief API for using storage
+ * @{
+ */
 
 /**
  * @file Storage.h
