@@ -20,7 +20,7 @@
 /**
  * @file SDHCI.cpp
  * @author Sony Semiconductor Solutions Corporation
- * @brief SPRESENSE Arduino SDHCI library
+ * @brief Spresense Arduino SDHCI library
  * 
  * @details The SDHCI library allows for reading from and writing to SD cards
  */
@@ -54,8 +54,6 @@
 #define STDIO_BUFFER_SIZE     4096           /**< STDIO buffer size. */
 #define MAX_PATH_LENGTH        128           /**< Max path lenght. */       
 static char SD_MOUNT_POINT[] = "/mnt/sd0/";  /**< SD mount point. */
-
-namespace SDHCILib {
 
 /**
  * @brief Creates the full path name for the specified relative path name.
@@ -96,7 +94,21 @@ boolean SDClass::begin(uint8_t dummy)
 }
 
 File SDClass::open(const char *filepath, uint8_t mode) {
-  return File(filepath, mode);
+  char fpbuf[MAX_PATH_LENGTH];
+  char *fpname = fullpathname(fpbuf, MAX_PATH_LENGTH, filepath);
+  struct stat buf;
+  int retry;
+  int ret;
+
+  /* In case that SD card isn't inserted, it times out at max 2 sec */
+  for (retry = 0; retry < 20; retry++) {
+    ret = stat(SD_MOUNT_POINT, &buf);
+    if (ret == 0) {
+      break;
+    }
+    usleep(100 * 1000); // 100 msec
+  }
+  return File(fpname, mode);
 }
 
 boolean SDClass::exists(const char *filepath) {
@@ -254,4 +266,3 @@ int SDClass::endUsbMsc()
   return 0;
 }
 
-};

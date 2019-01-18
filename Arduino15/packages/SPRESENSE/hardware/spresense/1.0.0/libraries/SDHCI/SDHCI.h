@@ -23,23 +23,23 @@
 /**
  * @file SDHCI.h
  * @author Sony Semiconductor Solutions Corporation
- * @brief SPRESENSE Arduino SDHCI library
+ * @brief Spresense Arduino SDHCI library
  * 
  * @details The SDHCI library allows for reading from and writing to SD cards
+ */
+
+/**
+ * @defgroup sdhci SDHCI Library API
+ * @brief API for using SD Card
+ * @{
  */
 
 #include <Arduino.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <stdio.h>
-
-#define FILE_READ O_RDONLY                                     /**< Open the file for reading, starting at the beginning of the file. */
-#define FILE_WRITE (O_RDONLY | O_WRONLY | O_CREAT | O_APPEND)  /**< Open the file for reading and writing, starting at the end of the file.  */
-
 #include <File.h>
-
-namespace SDHCILib {
-
 
 /**
  * @class SDClass
@@ -173,14 +173,9 @@ public:
   int endUsbMsc();
 
 private:
-
   void *mshandle;
-  friend class File;
 };
 
-};
-
-/* This ensure compatibility with sketches that uses only SD library */
-using namespace SDHCILib;
+/** @} sdhci */
 
 #endif
