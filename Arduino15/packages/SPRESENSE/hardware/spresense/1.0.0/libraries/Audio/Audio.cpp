@@ -195,13 +195,14 @@ err_t AudioClass::begin_manager(void)
 err_t AudioClass::begin_player(void)
 {
   AsCreatePlayerParam_t player_create_param;
-  player_create_param.msgq_id.player = MSGQ_AUD_PLY;
-  player_create_param.msgq_id.mng    = MSGQ_AUD_MGR;
-  player_create_param.msgq_id.mixer  = MSGQ_AUD_OUTPUT_MIX;
-  player_create_param.msgq_id.dsp    = MSGQ_AUD_DSP;
-  player_create_param.pool_id.es     = DEC_ES_MAIN_BUF_POOL;
-  player_create_param.pool_id.pcm    = REND_PCM_BUF_POOL;
-  player_create_param.pool_id.dsp    = DEC_APU_CMD_POOL;
+  player_create_param.msgq_id.player   = MSGQ_AUD_PLY;
+  player_create_param.msgq_id.mng      = MSGQ_AUD_MGR;
+  player_create_param.msgq_id.mixer    = MSGQ_AUD_OUTPUT_MIX;
+  player_create_param.msgq_id.dsp      = MSGQ_AUD_DSP;
+  player_create_param.pool_id.es       = DEC_ES_MAIN_BUF_POOL;
+  player_create_param.pool_id.pcm      = REND_PCM_BUF_POOL;
+  player_create_param.pool_id.dsp      = DEC_APU_CMD_POOL;
+  player_create_param.pool_id.src_work = SRC_WORK_MAIN_BUF_POOL;
 
   int act_rst = AS_CreatePlayerMulti(AS_PLAYER_ID_0, &player_create_param);
   if (!act_rst)
