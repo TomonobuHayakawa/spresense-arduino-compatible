@@ -1251,6 +1251,8 @@ err_t AudioClass::setThroughMode(ThroughInput input, ThroughI2sOut i2s_out, bool
   AS_SendAudioCommand(&command);
 
   AudioResult result;
+
+  AS_ReceiveAudioResult(&result);
   if (result.header.result_code != AUDRLT_SETTHROUGHPATHCMPLT)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
@@ -1258,8 +1260,6 @@ err_t AudioClass::setThroughMode(ThroughInput input, ThroughI2sOut i2s_out, bool
       print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
-
-puts("here!!");
 
   if(i2s_out == Mixer){
     command.set_through_path.path1.en  = true;
@@ -1269,6 +1269,7 @@ puts("here!!");
 
     AS_SendAudioCommand(&command);
 
+    AS_ReceiveAudioResult(&result);
     if (result.header.result_code != AUDRLT_SETTHROUGHPATHCMPLT)
       {
         print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
