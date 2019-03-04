@@ -399,7 +399,9 @@ err_t AudioClass::powerOff(void)
 /*--------------------------------------------------------------------------*/
 err_t AudioClass::setReadyMode(void)
 {
-  AudioCommand command;
+  board_external_amp_mute_control(true);
+
+	AudioCommand command;
   command.header.packet_length = LENGTH_SET_READY_STATUS;
   command.header.command_code  = AUDCMD_SETREADYSTATUS;
   command.header.sub_code      = 0x00;
@@ -415,8 +417,6 @@ err_t AudioClass::setReadyMode(void)
       print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
-
-  board_external_amp_mute_control(true);
 
   destroyStaticPools();
 
