@@ -20,6 +20,10 @@
 #ifndef Gnss_h
 #define Gnss_h
 
+#ifdef SUBCORE
+#error "GNSS library is NOT supported by SubCore."
+#endif
+
 #include <Stream.h>
 
 /**
@@ -29,6 +33,12 @@
  * @details It is a library for controlling the GNSS built in Spresense
  *          and acquiring positioning information. This library is available
  *          in the Arduino environment.
+ */
+
+/**
+ * @defgroup gnss GNSS Library API
+ * @brief API for using GNSS
+ * @{
  */
 
 /**
@@ -144,7 +154,7 @@ public:
     unsigned short posSatelliteType;    /**< using sv system, bit field; bit0:GPS, bit1:GLONASS */
     double  latitude;   /**< Latitude [degree] */
     double  longitude;  /**< Longitude [degree] */
-    double  altitude;   /**< Altitude [degree] */
+    double  altitude;   /**< Altitude [meter] */
     float   velocity;   /**< Velocity [m/s] */
     float   direction;  /**< Direction [degree] */
     float   pdop;       /**< Position DOP [-] */
@@ -434,5 +444,7 @@ private:
             DebugOut.print(str);
     }
 };
+
+/** @} gnss */
 
 #endif // Gnss_h

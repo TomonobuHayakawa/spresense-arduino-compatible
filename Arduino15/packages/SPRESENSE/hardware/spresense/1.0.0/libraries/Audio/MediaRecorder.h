@@ -28,11 +28,18 @@
 #ifndef MediaRecorder_h
 #define MediaRecorder_h
 
+#ifdef SUBCORE
+#error "Audio library is NOT supported by SubCore."
+#endif
+
 class File;
 #include <audio/audio_high_level_api.h>
+#include <audio/audio_message_types.h>
+#include <audio/utilities/frame_samples.h>
+#include <audio/utilities/wav_containerformat.h>
 #include <memutils/simple_fifo/CMN_SimpleFifo.h>
 
-#include "WavHeaderdef.h"
+#include "FrontEnd.h"
 
 /*--------------------------------------------------------------------------*/
 
@@ -64,6 +71,7 @@ class File;
 #define MEDIARECORDER_ECODE_BUFFER_AREA_ERROR 7
 #define MEDIARECORDER_ECODE_INSUFFICIENT_BUFFER_AREA 8
 #define MEDIARECORDER_ECODE_BASEBAND_ERROR 9
+#define MEDIARECORDER_ECODE_BUFFER_ALLOC_ERROR 10
 
 /**
  * MediaRecorder buffer size definition.
@@ -120,6 +128,7 @@ public:
    */
 
   err_t begin(AudioAttentionCb attcb);
+  err_t begin(AudioAttentionCb attcb, bool use_frontend);
 
   /**
    * @brief Finalize the MediaRecorder.
@@ -144,6 +153,36 @@ public:
   err_t activate(
       AsSetRecorderStsInputDevice input_device, /**< Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or AS_SETRECDR_STS_INPUTDEVICE_I2S*/
       MediaRecorderCallback mrcb                /**< Sepcify callback function which is called to notify API results. */
+  );
+
+  /**
+   * @brief Activate the MediaRecorder.
+   *
+   * @details This function works as same as above activate(input_device, mrcb).
+   *          But is able to set buffer size of recorder.
+   *
+   */
+
+  err_t activate(
+      AsSetRecorderStsInputDevice input_device, /**< Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or AS_SETRECDR_STS_INPUTDEVICE_I2S*/
+      MediaRecorderCallback mrcb,               /**< Sepcify callback function which is called to notify API results. */
+      uint32_t recorder_bufsize
+  );
+
+
+  /**
+   * @brief Activate the MediaRecorder.
+   *
+   * @details This function works as same as above activate(input_device, mrcb, bufsize).
+   *          But is able to set PreProcessing type. If ommit it, fix to Through.
+   *
+   */
+
+  err_t activate(
+      AsSetRecorderStsInputDevice input_device, /**< Select input device. AS_SETRECDR_STS_INPUTDEVICE_MIC or AS_SETRECDR_STS_INPUTDEVICE_I2S*/
+      MediaRecorderCallback mrcb,               /**< Sepcify callback function which is called to notify API results. */
+      uint32_t recorder_bufsize,
+      AsMicFrontendPreProcType proc_type
   );
 
   /**
@@ -242,6 +281,18 @@ public:
   err_t deactivate(void);
 
   /**
+   * @brief Set MicActivate the .
+   *
+   * @details The gain set when microphone is used can be specified
+   *          by the "mic_gain" argument.
+   *          You can set every 0.5 dB between 0 dB and 21 dB.
+   *          In this parameter, a value from 0 to 210 is set for every 5.
+   *
+   */
+
+  err_t setMicGain(int16_t mic_gain);
+
+  /**
    * @brief Read a recorded audio data
    *
    * @details This function reads encoded audio data from media recorder.
@@ -285,7 +336,11 @@ private:
    * To avoid create multiple instance
    */
 
-  MediaRecorder() {}
+  MediaRecorder()
+    : m_recorder_simple_fifo_buf(NULL)
+    , m_mr_callback(NULL)
+    , m_p_fed_ins(NULL)
+  {}
   MediaRecorder(const MediaRecorder&);
   MediaRecorder& operator=(const MediaRecorder&);
   ~MediaRecorder() {}
@@ -300,7 +355,10 @@ private:
 
   AsRecorderOutputDeviceHdlr m_output_device_handler;
   int                        m_es_size;
-  WavFormat_t               m_wav_format;
+  WAVHEADER                  m_wav_format;
+  MediaRecorderCallback      m_mr_callback;
+
+  FrontEnd *m_p_fed_ins;
 
   bool check_encode_dsp(uint8_t codec_type, const char *path, uint32_t sampling_rate);
 
@@ -312,13 +370,6 @@ private:
   void init_mp3(AsInitRecorderParam *param);
   void init_opus(AsInitRecorderParam *param);
   void init_pcm(AsInitRecorderParam *param);
-
-  /**
-   * Baseband setting
-   */
-
-  bool activateBaseband(void);
-  bool deactivateBaseband(void);
 };
 
 #endif // MediaRecorder_h

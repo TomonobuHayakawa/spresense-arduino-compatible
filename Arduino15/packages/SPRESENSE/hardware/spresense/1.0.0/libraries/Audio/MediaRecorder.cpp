@@ -1,5 +1,5 @@
 /*
- *  MediaRecorder.cpp - SPI implement file for the Spresense SDK
+ *  MediaRecorder.cpp - MediaRecorder implement file for the Spresense SDK
  *  Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
@@ -61,12 +61,29 @@ err_t MediaRecorder::begin(void)
 /*--------------------------------------------------------------------------*/
 err_t MediaRecorder::begin(AudioAttentionCb attcb)
 {
-  /* Allocate ES buffer */
+  return begin(attcb, true);
+}
 
-  m_recorder_simple_fifo_buf =
-    (uint32_t*)(0xfffffffc & ((uint32_t)(malloc(MEDIARECORDER_BUF_SIZE + 3)) + 3));
-
+/*--------------------------------------------------------------------------*/
+err_t MediaRecorder::begin(AudioAttentionCb attcb, bool use_frontend)
+{
   bool result;
+
+  if (use_frontend)
+    {
+      m_p_fed_ins = FrontEnd::getInstance();
+    }
+
+  if (m_p_fed_ins)
+    {
+      /* Create Frontend */
+
+      err_t fed_result = m_p_fed_ins->begin();
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
+    }
 
   /* Create MediaRecorder feature. */
 
@@ -86,33 +103,24 @@ err_t MediaRecorder::begin(AudioAttentionCb attcb)
       return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
 
-  /* Create Capture feature. */
-
-  AsCreateCaptureParam_t capture_create_param;
-
-  capture_create_param.msgq_id.dev0_req  = MSGQ_AUD_CAP;
-  capture_create_param.msgq_id.dev0_sync = MSGQ_AUD_CAP_SYNC;
-  capture_create_param.msgq_id.dev1_req  = 0xFF;
-  capture_create_param.msgq_id.dev1_sync = 0xFF;
-
-  result = AS_CreateCapture(&capture_create_param);
-  if (!result)
-    {
-      print_err("Error: As_CreateCapture() failure!\n");
-      return MEDIARECORDER_ECODE_COMMAND_ERROR;
-    }
-
   return MEDIARECORDER_ECODE_OK;
 }
 
 /*--------------------------------------------------------------------------*/
 err_t MediaRecorder::end(void)
 {
-  /* Free ES buffer */
-
-  free((void*)m_recorder_simple_fifo_buf);
-
   bool result;
+
+  if (m_p_fed_ins)
+    {
+      /* Delete Frontend */
+
+      err_t fed_result = m_p_fed_ins->end();
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
+    }
 
   /* Delete MediaRecorder */
 
@@ -123,24 +131,54 @@ err_t MediaRecorder::end(void)
       return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
 
-  /* Delete Capture */
-
-  result = AS_DeleteCapture();
-  if (!result)
-    {
-      print_err("Error: AS_DeleteCapture() failure!\n");
-      return MEDIARECORDER_ECODE_COMMAND_ERROR;
-    }
-
   return MEDIARECORDER_ECODE_OK;
 }
 
 /*--------------------------------------------------------------------------*/
 err_t MediaRecorder::activate(AsSetRecorderStsInputDevice input_device, MediaRecorderCallback mrcb)
 {
+  return activate(input_device, mrcb, MEDIARECORDER_BUF_SIZE);
+}
+ 
+/*--------------------------------------------------------------------------*/
+err_t MediaRecorder::activate(AsSetRecorderStsInputDevice input_device,
+                              MediaRecorderCallback mrcb,
+                              uint32_t recorder_bufsize)
+{
+  return activate(input_device, mrcb, MEDIARECORDER_BUF_SIZE, AsMicFrontendPreProcThrough);
+}
+
+/*--------------------------------------------------------------------------*/
+err_t MediaRecorder::activate(AsSetRecorderStsInputDevice input_device,
+                              MediaRecorderCallback mrcb,
+                              uint32_t recorder_bufsize,
+                              AsMicFrontendPreProcType proc_type)
+{
+  /* Hold callback */
+
+  m_mr_callback = mrcb;
+
+  /* Buffer size check */
+
+  if (!recorder_bufsize)
+    {
+      print_err("Invalid buffer size.\n");
+      return MEDIARECORDER_ECODE_BUFFER_SIZE_ERROR;
+    }
+
+  /* Allocate ES buffer */
+
+  m_recorder_simple_fifo_buf = static_cast<uint32_t *>(malloc(recorder_bufsize));
+
+  if (!m_recorder_simple_fifo_buf)
+    {
+      print_err("Buffer allocate error.\n");
+      return MEDIARECORDER_ECODE_BUFFER_ALLOC_ERROR;
+    }
+
   if (CMN_SimpleFifoInitialize(&m_recorder_simple_fifo_handle,
                                m_recorder_simple_fifo_buf,
-                               MEDIARECORDER_BUF_SIZE,
+                               recorder_bufsize,
                                NULL) != 0)
     {
       print_err("Fail to initialize simple FIFO.\n");
@@ -149,9 +187,21 @@ err_t MediaRecorder::activate(AsSetRecorderStsInputDevice input_device, MediaRec
 
   CMN_SimpleFifoClear(&m_recorder_simple_fifo_handle);
 
-  /* Activate MediaRecorder */
-
   bool result;
+
+  if (m_p_fed_ins)
+    {
+      /* Activate Frontend (sync move) */
+
+      err_t fed_result = m_p_fed_ins->activate(AsMicFrontendPreProcThrough);
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          m_mr_callback(AsRecorderEventAct, fed_result, 0);
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
+    }
+
+  /* Activate MediaRecorder */
 
   AsActivateRecorder recorder_act;
 
@@ -162,7 +212,7 @@ err_t MediaRecorder::activate(AsSetRecorderStsInputDevice input_device, MediaRec
   recorder_act.param.output_device         = AS_SETRECDR_STS_OUTPUTDEVICE_RAM;
   recorder_act.param.input_device_handler  = 0x00;
   recorder_act.param.output_device_handler = &m_output_device_handler;
-  recorder_act.cb                          = mrcb;
+  recorder_act.cb                          = NULL;
 
   result = AS_ActivateMediaRecorder(&recorder_act);
   if (!result)
@@ -171,14 +221,21 @@ err_t MediaRecorder::activate(AsSetRecorderStsInputDevice input_device, MediaRec
       return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
 
-  /* Activate Baseband */
-
-  result = activateBaseband();
+  AudioObjReply reply_info;
+  result = AS_ReceiveObjectReply(MSGQ_AUD_MGR, &reply_info);
   if (!result)
     {
-      print_err("Error: Baseband activation() failure!\n");
-      return MEDIARECORDER_ECODE_BASEBAND_ERROR;
+      print_err("Error: AS_ReceiveObjectReply() failure!\n");
+      return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
+
+  if (reply_info.result != AS_ECODE_OK)
+    {
+      m_mr_callback(AsRecorderEventAct, reply_info.result, 0);
+      return MEDIARECORDER_ECODE_COMMAND_ERROR;
+    }
+
+  m_mr_callback(AsRecorderEventAct, AS_ECODE_OK, 0);
 
   return MEDIARECORDER_ECODE_OK;
 }
@@ -223,10 +280,32 @@ err_t MediaRecorder::init(uint8_t codec_type,
       return MEDIARECORDER_ECODE_DSP_ACCESS_ERROR;
     }
 
+  bool result;
+
+
+  if (m_p_fed_ins)
+    {
+      /* Init Frontend */
+
+      AsDataDest dest;
+      dest.msg.msgqid  = MSGQ_AUD_RECORDER;
+      dest.msg.msgtype = MSG_AUD_MRC_CMD_ENCODE;
+
+      err_t fed_result = m_p_fed_ins->init(channel_number,
+                                           bit_length,
+                                           getCapSampleNumPerFrame(codec_type, sampling_rate),
+                                           AsDataPathMessage,
+                                           dest);
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          m_mr_callback(AsRecorderEventInit, fed_result, 0);
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
+    } 
+
   /* Init MediaRecorder */
 
   AsInitRecorderParam init_param;
-  bool result;
 
   init_param.sampling_rate  = sampling_rate;
   init_param.channel_number = channel_number;
@@ -263,6 +342,16 @@ err_t MediaRecorder::init(uint8_t codec_type,
       return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
 
+  AudioObjReply reply_info;
+  result = AS_ReceiveObjectReply(MSGQ_AUD_MGR, &reply_info);
+  if (!result)
+    {
+      print_err("Error: AS_ReceiveObjectReply() failure!\n");
+      return MEDIARECORDER_ECODE_COMMAND_ERROR;
+    }
+
+  m_mr_callback(AsRecorderEventInit, reply_info.result, 0);
+
   return MEDIARECORDER_ECODE_OK;
 }
 
@@ -273,17 +362,17 @@ void MediaRecorder::init_wav(AsInitRecorderParam *param)
 
   /* Create WAV header information */
 
-  memcpy(m_wav_format.riff, CHUNKID_RIFF, strlen(CHUNKID_RIFF));
-  memcpy(m_wav_format.wave, FORMAT_WAVE, strlen(FORMAT_WAVE));
-  memcpy(m_wav_format.fmt, SUBCHUNKID_FMT, strlen(SUBCHUNKID_FMT));
-  m_wav_format.fmt_size = FMT_SIZE;
-  m_wav_format.format   = AUDIO_FORMAT_PCM;
+  m_wav_format.riff     = CHUNKID_RIFF;
+  m_wav_format.wave     = FORMAT_WAVE;
+  m_wav_format.fmt      = SUBCHUNKID_FMT;
+  m_wav_format.fmt_size = FMT_CHUNK_SIZE;
+  m_wav_format.format   = FORMAT_ID_PCM;
   m_wav_format.channel  = param->channel_number;
   m_wav_format.rate     = param->sampling_rate;
   m_wav_format.avgbyte  = param->sampling_rate * param->channel_number * (param->bit_length / 8);
   m_wav_format.block    = param->channel_number * (param->bit_length / 8);
   m_wav_format.bit      = param->bit_length;
-  memcpy(m_wav_format.data, SUBCHUNKID_DATA, strlen(SUBCHUNKID_DATA));
+  m_wav_format.data     = SUBCHUNKID_DATA;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -308,16 +397,48 @@ void MediaRecorder::init_pcm(AsInitRecorderParam *param)
 /*--------------------------------------------------------------------------*/
 err_t MediaRecorder::start(void)
 {
+  if (m_recorder_simple_fifo_buf == NULL)
+    {
+      print_err("ERROR: FIFO area is not allcated.\n");
+      return MEDIARECORDER_ECODE_BUFFER_AREA_ERROR;
+    }
+
   CMN_SimpleFifoClear(&m_recorder_simple_fifo_handle);
 
   m_es_size = 0;
 
-  bool result = AS_StartMediaRecorder();
+  bool result;
+
+  if (m_p_fed_ins)
+    {
+      /* Start Frontend */
+
+      err_t fed_result = m_p_fed_ins->start();
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          m_mr_callback(AsRecorderEventInit, fed_result, 0);
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
+    }
+
+  /* Start MediaRecorder */
+
+  result = AS_StartMediaRecorder();
   if (!result)
     {
       print_err("Error: AS_StartMediaRecorder() failure!\n");
       return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
+
+  AudioObjReply reply_info;
+  result = AS_ReceiveObjectReply(MSGQ_AUD_MGR, &reply_info);
+  if (!result)
+    {
+      print_err("Error: AS_ReceiveObjectReply() failure!\n");
+      return MEDIARECORDER_ECODE_COMMAND_ERROR;
+    }
+
+  m_mr_callback(AsRecorderEventStart, reply_info.result, 0);
 
   return MEDIARECORDER_ECODE_OK;
 }
@@ -325,12 +446,38 @@ err_t MediaRecorder::start(void)
 /*--------------------------------------------------------------------------*/
 err_t MediaRecorder::stop(void)
 {
-  bool result = AS_StopMediaRecorder();
+  bool result;
+
+  if (m_p_fed_ins)
+    {
+      /* Stop Frontend */
+
+      err_t fed_result = m_p_fed_ins->stop();
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          m_mr_callback(AsRecorderEventInit, fed_result, 0);
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
+    }
+
+  /* Stop MediaRecorder */
+
+  result = AS_StopMediaRecorder();
   if (!result)
     {
       print_err("Error: AS_StopMediaRecorder() failure!\n");
       return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
+
+  AudioObjReply reply_info;
+  result = AS_ReceiveObjectReply(MSGQ_AUD_MGR, &reply_info);
+  if (!result)
+    {
+      print_err("Error: AS_ReceiveObjectReply() failure!\n");
+      return MEDIARECORDER_ECODE_COMMAND_ERROR;
+    }
+
+  m_mr_callback(AsRecorderEventStop, reply_info.result, 0);
 
   return MEDIARECORDER_ECODE_OK;
 }
@@ -338,18 +485,65 @@ err_t MediaRecorder::stop(void)
 /*--------------------------------------------------------------------------*/
 err_t MediaRecorder::deactivate(void)
 {
-  bool result = AS_DeactivateMediaRecorder();
+  bool result;
+
+  if (m_p_fed_ins)
+    {
+      /* Deactivate frontend */
+
+      err_t fed_result = m_p_fed_ins->deactivate();
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          m_mr_callback(AsRecorderEventInit, fed_result, 0);
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
+    }
+
+  /* Deactivate MediaRecorder */
+
+  result = AS_DeactivateMediaRecorder();
   if (!result)
     {
       print_err("Error: AS_DeactivateMediaRecorder() failure!\n");
       return MEDIARECORDER_ECODE_COMMAND_ERROR;
     }
 
-  result = deactivateBaseband();
+  AudioObjReply reply_info;
+  result = AS_ReceiveObjectReply(MSGQ_AUD_MGR, &reply_info);
   if (!result)
     {
-      print_err("Error: Baseband deactivateion failure!\n");
-      return MEDIARECORDER_ECODE_BASEBAND_ERROR;
+      print_err("Error: AS_ReceiveObjectReply() failure!\n");
+      return MEDIARECORDER_ECODE_COMMAND_ERROR;
+    }
+
+  if (reply_info.result != AS_ECODE_OK)
+    {
+      m_mr_callback(AsRecorderEventDeact, reply_info.result, 0);
+      return MEDIARECORDER_ECODE_COMMAND_ERROR;
+    }
+
+  /* Free ES buffer */
+
+  free((void*)m_recorder_simple_fifo_buf);
+  m_recorder_simple_fifo_buf = NULL;
+
+  m_mr_callback(AsRecorderEventDeact, AS_ECODE_OK, 0);
+
+  return MEDIARECORDER_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t MediaRecorder::setMicGain(int16_t mic_gain)
+{
+  if (m_p_fed_ins)
+    {
+      /* Set Mic Gain */
+
+      err_t fed_result = m_p_fed_ins->setMicGain(mic_gain);
+      if (fed_result != FRONTEND_ECODE_OK)
+        {
+          return MEDIARECORDER_ECODE_COMMAND_ERROR;
+        }
     }
 
   return MEDIARECORDER_ECODE_OK;
@@ -365,10 +559,17 @@ err_t MediaRecorder::readFrames(uint8_t* p_buffer, uint32_t buffer_size, uint32_
       print_err("ERROR: Buffer area not specified.\n");
       return MEDIARECORDER_ECODE_BUFFER_AREA_ERROR;
     }
+
   if (buffer_size == 0)
     {
       print_err("ERROR: Buffer area size error.\n");
       return MEDIARECORDER_ECODE_BUFFER_SIZE_ERROR;
+    }
+
+  if (m_recorder_simple_fifo_buf == NULL)
+    {
+      print_err("ERROR: FIFO area is not allcated.\n");
+      return MEDIARECORDER_ECODE_BUFFER_AREA_ERROR;
     }
 
   size_t data_size = CMN_SimpleFifoGetOccupiedSize(&m_recorder_simple_fifo_handle);
@@ -379,7 +580,7 @@ err_t MediaRecorder::readFrames(uint8_t* p_buffer, uint32_t buffer_size, uint32_
     {
       if (data_size > buffer_size)
         {
-          print_err("WARNING: Insufficient buffer area.\n");
+          print_dbg("WARNING: Insufficient buffer area.\n");
           poll_size = (size_t)buffer_size;
           rst = MEDIARECORDER_ECODE_INSUFFICIENT_BUFFER_AREA;
         }
@@ -406,10 +607,10 @@ err_t MediaRecorder::writeWavHeader(File& myfile)
 {
   myfile.seek(0);
 
-  m_wav_format.total_size = m_es_size + sizeof(WavFormat_t) - 8;
+  m_wav_format.total_size = m_es_size + sizeof(WAVHEADER) - 8;
   m_wav_format.data_size  = m_es_size;
 
-  int ret = myfile.write((uint8_t*)&m_wav_format, sizeof(WavFormat_t));
+  int ret = myfile.write((uint8_t*)&m_wav_format, sizeof(WAVHEADER));
   if (ret < 0)
     {
       print_err("Fail to write file(wav header)\n");
@@ -422,7 +623,7 @@ err_t MediaRecorder::writeWavHeader(File& myfile)
 /*--------------------------------------------------------------------------*/
 bool MediaRecorder::check_encode_dsp(uint8_t codec_type, const char *path, uint32_t sampling_rate)
 {
-  char fullpath[32];
+  char fullpath[32] = { 0 };
   cxd56_audio_clkmode_t clk = CXD56_AUDIO_CLKMODE_NORMAL;
   struct stat buf;
   int retry;
@@ -450,7 +651,8 @@ bool MediaRecorder::check_encode_dsp(uint8_t codec_type, const char *path, uint3
         break;
 
       default:
-        break;
+        print_err("Codec type %d is invalid value.\n", codec_type);
+        return false;
     }
 
   if (0 == strncmp("/mnt/sd0", path, 8))
@@ -484,85 +686,14 @@ bool MediaRecorder::check_encode_dsp(uint8_t codec_type, const char *path, uint3
 }
 
 /*--------------------------------------------------------------------------*/
-bool MediaRecorder::activateBaseband(void)
-{
-  CXD56_AUDIO_ECODE error_code;
-
-  /* Power on audio device */
-
-  if (cxd56_audio_get_status() == CXD56_AUDIO_POWER_STATE_OFF)
-    {
-      error_code = cxd56_audio_poweron();
-
-      if (error_code != CXD56_AUDIO_ECODE_OK)
-        {
-          print_err("cxd56_audio_poweron() error! [%d]\n", error_code);
-          return false;
-        }
-    }
-
-  /* Enable input */
-
-  error_code = cxd56_audio_en_input();
-
-  if (error_code != CXD56_AUDIO_ECODE_OK)
-    {
-       print_err("cxd56_audio_en_input() error! [%d]\n", error_code);
-       return false;
-    }
-
-  return true;
-}
-
-/*--------------------------------------------------------------------------*/
-bool MediaRecorder::deactivateBaseband(void)
-{
-  CXD56_AUDIO_ECODE error_code;
-
-  /* Disable input */
-
-  error_code = cxd56_audio_dis_input();
-
-  if (error_code != CXD56_AUDIO_ECODE_OK)
-    {
-      print_err("cxd56_audio_dis_input() error! [%d]\n", error_code);
-      return false;
-    }
-
-  /* Power off audio device */
-
-  if (cxd56_audio_get_status() == CXD56_AUDIO_POWER_STATE_ON)
-    {
-      error_code = cxd56_audio_poweroff();
-
-      if (error_code != CXD56_AUDIO_ECODE_OK)
-        {
-          print_err("cxd56_audio_poweroff() error! [%d]\n", error_code);
-          return false;
-        }
-    }
-
-  return true;
-}
-
-/*--------------------------------------------------------------------------*/
 bool MediaRecorder::setCapturingClkMode(uint8_t clk_mode)
 {
-  CXD56_AUDIO_ECODE error_code = CXD56_AUDIO_ECODE_OK;
-
-  cxd56_audio_clkmode_t mode;
-
-  mode = (clk_mode == MEDIARECORDER_CAPCLK_NORMAL)
-           ? CXD56_AUDIO_CLKMODE_NORMAL : CXD56_AUDIO_CLKMODE_HIRES;
-
-  error_code = cxd56_audio_set_clkmode(mode);
-
-  if (error_code != CXD56_AUDIO_ECODE_OK)
+  if (m_p_fed_ins)
     {
-      print_err("cxd56_audio_set_clkmode() error! [%d]\n", error_code);
-      return false;
+      err_t fed_result = m_p_fed_ins->setCapturingClkMode(clk_mode);
+      return (fed_result == FRONTEND_ECODE_OK) ? true : false;
     }
 
-  return true;
+  return false;
 }
 

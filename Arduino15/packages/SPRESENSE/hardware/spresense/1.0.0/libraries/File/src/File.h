@@ -20,6 +20,10 @@
 #ifndef __FILE_H__
 #define __FILE_H__
 
+#ifdef SUBCORE
+#error "File library is NOT supported by SubCore."
+#endif
+
 /**
  * @defgroup file File Library API
  * @brief API for file operations
@@ -52,7 +56,7 @@ class File : public Stream {
 
 private:
   char* _name;            /**<  The name of the file. */
-  FILE* _fd;              /**<  The pointer to a File object. */
+  int _fd;                /**<  The descriptor of the File object. */
   unsigned long _size;    /**<  The size of the file. */
   unsigned long _curpos;  /**<  The current position within the file. */
   void* _dir;             /**<  The pointer to the directory stream. */

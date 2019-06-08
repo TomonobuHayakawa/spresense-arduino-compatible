@@ -26,6 +26,7 @@
 #include <string.h>
 #include <nuttx/config.h>
 #include <sdk/config.h>
+#include <math.h>
 
 // Some libraries assumes that AVR-specific definitions are
 // automatically included from Arduino.h... Therefore, here
@@ -33,12 +34,6 @@
 
 #include "avr/pgmspace.h"
 #include "avr/interrupt.h"
-
-#ifdef CONFIG_LIBM
-#include <math.h>
-#else
-#error Please enable LIBM in nuttx
-#endif // CONFIG_LIBM
 
 #include "binary.h"
 //#include "itoa.h"
@@ -103,7 +98,7 @@ void delay(unsigned long ms);
 void delayMicroseconds(unsigned int us);    // can be accurate if us >= 8
 unsigned long clockCyclesPerMicrosecond(void);
 #define clockCyclesToMicroseconds(a) ( (a) / clockCyclesPerMicrosecond() )
-#define microsecondsToClockCycles(a) ( (a) * clockCyclesPerMicrosecond() )
+#define microsecondsToClockCycles(a) ( (unsigned long long) (a) * clockCyclesPerMicrosecond() )
 
 /* Math */
 #define min(a, b)    ((a) < (b) ? (a) : (b))
@@ -200,6 +195,9 @@ void attachTimerInterrupt(unsigned int (*isr)(void), unsigned int us);
 // Note:
 //   This can not be used at the same time with tone().
 void detachTimerInterrupt(void);
+
+/* macro to customize heap size for subcore */
+#define USER_HEAP_SIZE(size) __asm (".global __userheap_size__; .equ __userheap_size__," #size);
 
 #endif // __cplusplus
 

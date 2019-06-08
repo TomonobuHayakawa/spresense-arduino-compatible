@@ -1,6 +1,6 @@
 /*
  *  UsbMsc.ino - Example to Open SD Card on the PC as USB Mass Storage
- *  Copyright 2018 Sony Semiconductor Solutions Corporation
+ *  Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

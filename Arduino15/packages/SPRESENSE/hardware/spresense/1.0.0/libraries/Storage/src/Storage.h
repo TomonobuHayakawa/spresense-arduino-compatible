@@ -20,6 +20,10 @@
 #ifndef __STORAGE_H__
 #define __STORAGE_H__
 
+#ifdef SUBCORE
+#error "Storage library is NOT supported by SubCore."
+#endif
+
 /**
  * @defgroup storage Storage Library API
  * @brief API for using storage
@@ -49,7 +53,7 @@
 class StorageClass {
 
 private:
-  char *realpath(char *dest, const char *src, size_t n);
+  boolean _realpath(char *dest, const char *src, size_t n);
 
 protected:
   char mountdir[16];

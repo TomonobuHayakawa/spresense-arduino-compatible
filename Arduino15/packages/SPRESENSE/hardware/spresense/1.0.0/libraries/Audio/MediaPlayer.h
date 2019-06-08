@@ -20,11 +20,16 @@
 #ifndef MediaPlayer_h
 #define MediaPlayer_h
 
+#ifdef SUBCORE
+#error "Audio library is NOT supported by SubCore."
+#endif
+
 class File;
 
 // #ifdef __cplusplus
 
 #include <audio/audio_high_level_api.h>
+#include <audio/utilities/wav_containerformat_parser.h>
 #include <memutils/simple_fifo/CMN_SimpleFifo.h>
 
 /*--------------------------------------------------------------------------*/
@@ -52,6 +57,9 @@ class File;
 #define MEDIAPLAYER_ECODE_FILEACCESS_ERROR 3
 #define MEDIAPLAYER_ECODE_FILEEND 4
 #define MEDIAPLAYER_ECODE_SHARED_MEMORY_ERROR 5
+#define MEDIAPLAYER_ECODE_WAV_PARSER_ERROR 6
+#define MEDIAPLAYER_ECODE_BUFFERSIZE_ERROR 7
+#define MEDIAPLAYER_ECODE_BUFFERALLOC_ERROR 8
 
 #define MEDIAPLAYER_BUF_FRAME_NUM  8
 #define MEDIAPLAYER_BUF_FRAME_SIZE 6144
@@ -152,6 +160,35 @@ public:
       PlayerId id,             /**< Select Player ID. */
       uint8_t output_device,   /**< Set output device.(_not supported_)*/
       MediaPlayerCallback mpcb /**< Sepcify callback function which is called to notify API results. */
+  );
+
+  /**
+   * @brief Activate the MediaPlayer
+   *
+   * @details This API works as same as activate(id, mpcb),
+   *          but you can set buffer size of player.
+   *
+   */
+
+  err_t activate(
+      PlayerId id,              /**< Select Player ID. */
+      MediaPlayerCallback mpcb, /**< Sepcify callback function which is called to notify API results. */
+      uint32_t player_bufsize   /**< buffer size of player */
+  );
+
+  /**
+   * @brief Activate the MediaPlayer (Old compatible)
+   *
+   * @details This API works as same as activate(id, output_device, mpcb),
+   *          but you can set buffer size of player.
+   *
+   */
+
+  err_t activate(
+      PlayerId id,              /**< Select Player ID. */
+      uint8_t output_device,    /**< Set output device.(_not supported_)*/
+      MediaPlayerCallback mpcb, /**< Sepcify callback function which is called to notify API results. */
+      uint32_t player_bufsize   /**< buffer size of player */
   );
 
   /**
@@ -332,7 +369,10 @@ private:
    * To avoid create multiple instance
    */
 
-  MediaPlayer() {}
+  MediaPlayer()
+    : m_player0_simple_fifo_buf(NULL)
+    , m_player1_simple_fifo_buf(NULL)
+  {}
   MediaPlayer(const MediaPlayer&);
   MediaPlayer& operator=(const MediaPlayer&);
   ~MediaPlayer() {}
