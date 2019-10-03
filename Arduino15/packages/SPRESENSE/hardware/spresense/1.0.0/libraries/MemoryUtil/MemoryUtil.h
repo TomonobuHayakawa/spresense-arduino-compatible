@@ -20,6 +20,10 @@
 #ifndef MemoryUtil_h
 #define MemoryUtil_h
 
+/* Define the following: Reduce memory usage to 1 tile (128 kbytes). */
+
+//#define MEMORY_UTIL_TINY
+
 #ifdef SUBCORE
 #error "MemoryUtil library is NOT supported by SubCore."
 #endif
@@ -30,11 +34,15 @@
 #include <memutils/memory_manager/MemHandle.h>
 #include <memutils/message/Message.h>
 
+#ifdef MEMORY_UTIL_TINY
+#include "memutil/tiny/msgq_id.h"
+#include "memutil/tiny/mem_layout.h"
+#include "memutil/tiny/memory_layout.h"
+#else
 #include "memutil/msgq_id.h"
 #include "memutil/mem_layout.h"
 #include "memutil/memory_layout.h"
-
-#define RAM_TILE_SIZE   (1024*128)
+#endif
 
 using namespace MemMgrLite;
 
@@ -67,7 +75,7 @@ public:
    *
    */
 
-  int setLayout(uint8_t layout_no);
+  int setLayout(uint8_t sec_no, uint8_t layout_no);
 
   /**
    * @brief Destroy the static memory pool.
@@ -90,7 +98,7 @@ public:
    *
    */
 
-  const PoolAttr* getLayout(int layout_no);
+  const PoolSectionAttr* getLayout(uint8_t sec_no, int layout_no);
 
 private:
   enum E_state{
@@ -108,9 +116,11 @@ extern MemoryUtilClass MemoryUtil;
 /*--------------------------------------------------------------------------*/
 extern int initMemoryPools(void);
 extern int createStaticPools(uint8_t layout_no);
+extern int createStaticPools(uint8_t sec_no, uint8_t layout_no);
 extern int destroyStaticPools(void);
 extern int finalizeMemoryPools(void);
-extern const PoolAttr *getPoolLayout(int layout_no);
+extern const PoolSectionAttr *getPoolLayout(int layout_no);
+extern const PoolSectionAttr *getPoolLayout(uint8_t sec_no, int layout_no);
 
 
 #endif /* MemoryUtil_h */
