@@ -165,6 +165,17 @@ err_t FrontEnd::activate(MicFrontendCallback fedcb)
 
   return FRONTEND_ECODE_OK;
 }
+
+/*--------------------------------------------------------------------------*/
+err_t FrontEnd::init(uint8_t channel_number,
+                     uint8_t bit_length,
+                     uint32_t samples_per_frame,
+                     ObjectConnector::Destination dest)
+{
+  AsDataDest asdest = ObjectConnector::connect(dest);
+
+  return init(channel_number, bit_length, samples_per_frame, AsDataPathMessage, asdest);
+}
  
 /*--------------------------------------------------------------------------*/
 err_t FrontEnd::init(uint8_t channel_number,

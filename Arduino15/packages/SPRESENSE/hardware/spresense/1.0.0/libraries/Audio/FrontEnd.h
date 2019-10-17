@@ -38,6 +38,8 @@
 #include <audio/utilities/wav_containerformat.h>
 #include <memutils/simple_fifo/CMN_SimpleFifo.h>
 
+#include "ObjectConnector.h"
+
 /*--------------------------------------------------------------------------*/
 
 /**
@@ -141,6 +143,21 @@ public:
 
   err_t activate(
       MicFrontendCallback fedcb
+  );
+
+  /**
+   * @brief Initialize the FrontEnd 
+   *
+   * @details In this API, you can set connection destination.
+   *          Before you start FrontEnd, you must initialize by this API.
+   *
+   */
+
+  err_t init(
+      uint8_t channel_number,           /**< Set chennel number. AS_CHANNEL_MONO or AS_CHANNEL_STEREO, 2CH, 4CH, 8CH */
+      uint8_t bit_length,               /**< Set bit length. AS_BITLENGTH_16 or AS_BITLENGTH_24 */
+      uint32_t samples_per_frame,       /**< Number of Samples per one frame */
+      ObjectConnector::Destination dest /**< Destination of outgoing data from FrontEnd */
   );
 
   /**

@@ -285,15 +285,10 @@ err_t MediaRecorder::init(uint8_t codec_type,
     {
       /* Init Frontend */
 
-      AsDataDest dest;
-      dest.msg.msgqid  = MSGQ_AUD_RECORDER;
-      dest.msg.msgtype = MSG_AUD_MRC_CMD_ENCODE;
-
       err_t fed_result = m_p_fed_ins->init(channel_number,
                                            bit_length,
                                            getCapSampleNumPerFrame(codec_type, sampling_rate),
-                                           AsDataPathMessage,
-                                           dest);
+                                           ObjectConnector::ConnectToMediaRecorder);
       if (fed_result != FRONTEND_ECODE_OK)
         {
           m_mr_callback(AsRecorderEventInit, fed_result, 0);
