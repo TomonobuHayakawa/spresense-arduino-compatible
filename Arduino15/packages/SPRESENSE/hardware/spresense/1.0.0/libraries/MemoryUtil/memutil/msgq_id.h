@@ -38,20 +38,16 @@
 #define MSGQ_ID_H_INCLUDED
 
 /* Message area size: 10384 bytes */
-
 #define MSGQ_TOP_DRM 0xfd000
 #define MSGQ_END_DRM 0xff890
 
 /* Message area fill value after message poped */
-
 #define MSG_FILL_VALUE_AFTER_POP 0x0
 
 /* Message parameter type match check */
-
 #define MSG_PARAM_TYPE_MATCH_CHECK false
 
 /* Message queue pool IDs */
-
 #define MSGQ_NULL 0
 #define MSGQ_AUD_MGR 1
 #define MSGQ_AUD_APP 2
@@ -336,5 +332,4 @@
 #define MSGQ_SEN_MGR_H_QUE_DRM 0xffffffff
 #define MSGQ_SEN_MGR_H_SIZE 0
 #define MSGQ_SEN_MGR_H_NUM 0
-
 #endif /* MSGQ_ID_H_INCLUDED */

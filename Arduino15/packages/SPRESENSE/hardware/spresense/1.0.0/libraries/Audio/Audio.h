@@ -853,6 +853,17 @@ public:
      return m_es_size;
    }
 
+  /* @brief Synthesizer */
+
+  err_t setSynthesizer(void);
+  err_t initSynthesizer(const char *dps_path,
+                        uint8_t     channel_num,
+                        uint32_t    sampling_rate,
+                        uint8_t     bit_width);
+  err_t startSynthesizer(void);
+  err_t stopSynthesizer(void);
+  err_t setFreqSynthesizer(uint8_t channel_no, uint32_t frequency);
+
 private:
 
   /**
@@ -892,10 +903,12 @@ private:
   err_t begin_manager(void);
   err_t begin_player(void);
   err_t begin_recorder(void);
+  err_t begin_synthesizer(void);
 
   err_t end_manager(void);
   err_t end_player(void);
   err_t end_recorder(void);
+  err_t end_synthesizer(void);
 
   err_t activateAudio(void);
 

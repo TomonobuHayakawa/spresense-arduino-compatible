@@ -27,6 +27,7 @@
 #include <nuttx/init.h>
 #include <nuttx/arch.h>
 #include <arch/chip/pm.h>
+#include <arch/chip/cxd56_audio.h>  /* To be deleted: Supported by AudioManager */
 #include <arch/board/board.h>
 
 #include "Audio.h"
@@ -195,6 +196,13 @@ err_t AudioClass::begin(AudioAttentionCb attcb)
       return ret;
     }
 
+  ret = begin_synthesizer();
+  if (ret != AUDIOLIB_ECODE_OK)
+    {
+      print_err("Synthesizer creation error.\n");
+      return ret;
+    }
+
   return ret;
 }
 
@@ -203,6 +211,7 @@ err_t AudioClass::end(void)
 {
   end_player();
   end_recorder();
+  end_synthesizer();
   end_manager();
 
   return AUDIOLIB_ECODE_OK;
@@ -1946,3 +1955,162 @@ bool AudioClass::check_encode_dsp(uint8_t codec_type, const char *path, uint32_t
   return true;
 }
 
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::begin_synthesizer(void)
+{
+  /* Create Synthesizer */
+
+  AsCreateSynthesizerParam_t  syn;
+
+  syn.msgq_id.synthesizer = MSGQ_AUD_SOUND_EFFECT;
+  syn.msgq_id.mng         = MSGQ_AUD_APP;
+  syn.msgq_id.dsp         = MSGQ_AUD_DSP;
+  syn.msgq_id.mixer       = MSGQ_AUD_OUTPUT_MIX;
+  syn.pool_id.input       = S0_NULL_POOL;
+  syn.pool_id.output      = S0_REND_PCM_BUF_POOL;
+  syn.pool_id.dsp         = S0_DEC_APU_CMD_POOL;
+
+  if (!AS_CreateMediaSynthesizer(&syn, NULL))
+    {
+      print_err("AS_CreateMediaSynthesizer failed. system memory insufficient!\n");
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::end_synthesizer(void)
+{
+  AS_DeleteMediaSynthesizer();
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+static err_t receive_object_reply(int line_no)
+{
+  AudioObjReply info;
+
+  AS_ReceiveObjectReply(MSGQ_AUD_APP, &info);
+
+  if (info.result != OK)
+    {
+      printf("RECEIVE_OBJECT_REPLY[%d] error!\n", line_no);
+      printf("  id        0x%x\n", info.id);
+      printf("  type      0x%x\n", info.type);
+      printf("  module_id 0x%x\n", info.module_id);
+      printf("  result    0x%x\n", info.result);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+static void outputMixerCallback(MsgQueId requester_dtq, MsgType msgtype, AsOutputMixDoneParam *param)
+{
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::setSynthesizer(void)
+{
+  /* Set memory layout for memutil */
+
+  createStaticPools(MEM_LAYOUT_PLAYER);
+
+  /* Provisional: Supported by AudioManager ---> */
+
+  /* Power on audio device */
+
+  CXD56_AUDIO_ECODE error_code = cxd56_audio_poweron();
+
+  if (error_code != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("cxd56_audio_poweron() error! [%d]\n", error_code);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  /* <--- Provisional: Supported by AudioManager */
+
+  /* Activate OutputMixer */
+
+  AsActivateOutputMixer mixer_act;
+
+  mixer_act.output_device = HPOutputDevice;
+  mixer_act.mixer_type    = MainOnly;
+  mixer_act.post_enable   = PostFilterEnable;
+  mixer_act.cb            = outputMixerCallback;
+
+  AS_ActivateOutputMixer(OutputMixer0, &mixer_act);
+
+  /* Initialize postproc */
+
+  AsInitPostProc  init;
+  uint8_t         temp[128];
+
+  init.addr = temp;
+  init.size = sizeof(temp);
+
+  AS_InitPostprocOutputMixer(OutputMixer0, &init);
+
+  /* Activate Synthesizer */
+
+  AsActivateSynthesizer act;
+
+  act.cb = NULL;
+
+  AS_ActivateMediaSynthesizer(&act);
+
+  return receive_object_reply(__LINE__);
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initSynthesizer(const char *dps_path, uint8_t channel_num, uint32_t sampling_rate, uint8_t bit_width)
+{
+  AsInitSynthesizerParam  init;
+
+  init.type          = AsSynthesizerSinWave;
+  init.channel_num   = channel_num;
+  init.sampling_rate = sampling_rate;
+  init.bit_width     = bit_width;
+
+  strcpy(init.dsp_path, dps_path);
+
+  AS_InitMediaSynthesizer(&init);
+
+  /* Unmute */
+
+  board_external_amp_mute_control(false);
+
+  return receive_object_reply(__LINE__);
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::startSynthesizer(void)
+{
+  AS_StartMediaSynthesizer();
+
+  return receive_object_reply(__LINE__);
+}
+
+/* ------------------------------------------------------------------------ */
+err_t AudioClass::stopSynthesizer(void)
+{
+  AS_StopMediaSynthesizer();
+
+  return receive_object_reply(__LINE__);
+}
+
+/* ------------------------------------------------------------------------ */
+err_t AudioClass::setFreqSynthesizer(uint8_t channel_no, uint32_t frequency)
+{
+  AsSetSynthesizer set_param;
+
+  set_param.channel_no = channel_no;
+  set_param.frequency  = frequency;
+
+  AS_SetMediaSynthesizer(&set_param);
+
+  return receive_object_reply(__LINE__);
+}
