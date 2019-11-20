@@ -106,7 +106,7 @@ static void recognizer_find_callback(AsRecognitionInfo info)
 void setup()
 {
   theSD.begin();
-  
+
   /* Initialize memory pools and message libs */
 
   initMemoryPools();
@@ -127,16 +127,19 @@ void setup()
   theFrontend->activate(frontend_done_callback);
   theRecognizer->activate(recognizer_done_callback);
 
-  usleep(100 * 1000); /* waiting for Mic startup */
+  usleep(100 * 1000); /* Waiting for Mic startup */
 
   /*
    * Initialize main player to decode stereo mp3 stream with 48 kb/s sample rate
    * Search for MP3 codec in "/mnt/sd0/BIN" directory
    */
 
-  theFrontend->init(recognizer_cannel_number, recognizer_bit_length, 384, AsDataPathMessage, FrontEnd::ToRecognizer);
+  theFrontend->init(recognizer_cannel_number, recognizer_bit_length, 384, ObjectConnector::ConnectToRecognizer);
+
   theRecognizer->init(recognizer_find_callback,
                       "/mnt/sd0/BIN/RCGPROC");
+
+  usleep(200 * 1000); /* Waiting for recognizer initialize */
 
   /* Init Recognizer DSP */
   

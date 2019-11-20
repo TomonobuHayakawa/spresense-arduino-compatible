@@ -92,7 +92,7 @@ void setup()
 
   /* Open the file. Note that only one file can be open at a time,
      so you have to close this one before opening another. */
-  myFile = SD.open("ayaka.mp3");
+  myFile = SD.open("Sound.mp3");
 
   /* Verify file open */
   if (!myFile)
