@@ -196,6 +196,13 @@ err_t AudioClass::begin(AudioAttentionCb attcb)
       return ret;
     }
 
+  ret = begin_recognizer();
+  if (ret != AUDIOLIB_ECODE_OK)
+    {
+      print_err("Recognizer creation error.\n");
+      return ret;
+    }
+
   ret = begin_synthesizer();
   if (ret != AUDIOLIB_ECODE_OK)
     {
@@ -375,6 +382,31 @@ err_t AudioClass::begin_recorder(void)
 }
 
 /*--------------------------------------------------------------------------*/
+err_t AudioClass::begin_recognizer(void)
+{
+  /* MicFrontend is already created at begin_recorder(). */
+
+  /* Create Recognizer */
+
+  AsCreateRecognizerParam_t recognizer_create_param;
+  recognizer_create_param.msgq_id.recognizer = MSGQ_AUD_RECOGNIZER;
+  recognizer_create_param.msgq_id.mng        = MSGQ_AUD_MGR;
+  recognizer_create_param.msgq_id.dsp        = MSGQ_AUD_RCGDSP;
+  recognizer_create_param.pool_id.out        = S0_OUTPUT_BUF_POOL;
+  recognizer_create_param.pool_id.dsp        = S0_RCG_APU_CMD_POOL;
+
+  if (!AS_CreateRecognizer(&recognizer_create_param, NULL))
+    {
+      printf("Error: AS_CreateRecognizer() failure. system memory insufficient!\n");
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  /* Capture is already created at begin_recorder(). */
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
 err_t AudioClass::end_manager(void)
 {
   AS_DeleteAudioManager();
@@ -419,7 +451,7 @@ err_t AudioClass::activateAudio(void)
   ids.mixer       = MSGQ_AUD_OUTPUT_MIX;
   ids.recorder    = MSGQ_AUD_RECORDER;
   ids.effector    = 0xFF;
-  ids.recognizer  = 0xFF;
+  ids.recognizer  = MSGQ_AUD_RECOGNIZER;
 
   AS_CreateAudioManager(ids, (m_attention_callback) ? m_attention_callback : attentionCallback);
 
@@ -1058,6 +1090,22 @@ err_t AudioClass::setRecorderMode(uint8_t input_device)
 /*--------------------------------------------------------------------------*/
 err_t AudioClass::initMicFrontend(uint8_t ch_num, uint8_t bit_length, uint16_t samples)
 {
+  return initMicFrontend(ch_num,
+                         bit_length,
+                         samples,
+                         AsMicFrontendPreProcThrough,
+                         AsMicFrontendDataToRecorder,
+                         "");
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initMicFrontend(uint8_t ch_num,
+                                  uint8_t bit_length,
+                                  uint16_t samples,
+                                  AsMicFrontendPreProcType type,
+                                  AsFrontendDataDest dest,
+                                  const char *dsp_path)
+{
   AudioCommand command;
   command.header.packet_length = LENGTH_INIT_MICFRONTEND;
   command.header.command_code  = AUDCMD_INIT_MICFRONTEND;
@@ -1068,8 +1116,8 @@ err_t AudioClass::initMicFrontend(uint8_t ch_num, uint8_t bit_length, uint16_t s
   command.init_micfrontend_param.preproc_type = AsMicFrontendPreProcThrough;
   snprintf(command.init_micfrontend_param.preprocess_dsp_path,
            AS_PREPROCESS_FILE_PATH_LEN,
-           "\0");
-  command.init_micfrontend_param.data_dest = AsMicFrontendDataToRecorder;
+           "%s", dsp_path);
+  command.init_micfrontend_param.data_dest = dest;
   AS_SendAudioCommand(&command);
 
   AudioResult result;
@@ -1457,6 +1505,331 @@ err_t AudioClass::setRenderingClockMode(AsClkMode mode)
     {
       print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
               command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/****************************************************************************
+ * Recognizer API on Audio Class
+ ****************************************************************************/
+err_t AudioClass::setRecognizerMode(void)
+{
+  const NumLayout layout_no = MEM_LAYOUT_RECOGNIZER;
+
+  assert(layout_no < NUM_MEM_LAYOUTS);
+  createStaticPools(layout_no);
+
+  AudioCommand command;
+
+  command.header.packet_length = LENGTH_SET_RECOGNIZER_STATUS;
+  command.header.command_code  = AUDCMD_SETRECOGNIZERSTATUS;
+  command.header.sub_code      = 0x00;
+  command.set_recognizer_status_param.input_device = AsMicFrontendDeviceMic;
+
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_STATUSCHANGED)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initRecognizer(uint8_t ch_num,
+                                 uint8_t bit_length,
+                                 uint32_t samples,
+                                 RecognizerFindCallback fcb)
+{
+  return initRecognizer(ch_num,
+                        bit_length,
+                        samples,
+                        //"/mnt/sd0/BIN/RCGPROC",
+                        "/mnt/spif/BIN/RCGPROC",
+                        fcb);
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initRecognizer(uint8_t ch_num,
+                                 uint8_t bit_length,
+                                 uint32_t samples,
+                                 const char *dsp_path,
+                                 RecognizerFindCallback fcb)
+{
+  initMicFrontend(ch_num,
+                  bit_length,
+                  samples,
+                  AsMicFrontendPreProcSrc,
+                  AsMicFrontendDataToRecognizer,
+                  //"/mnt/sd0/BIN/SRC");
+                  "/mnt/spif/BIN/SRC");
+
+  AudioCommand command;
+
+  command.header.packet_length = LENGTH_INIT_RECOGNIZER;
+  command.header.command_code  = AUDCMD_INIT_RECOGNIZER;
+  command.header.sub_code      = 0x00;
+  command.init_recognizer.fcb        = fcb;
+  command.init_recognizer.recognizer_type = AsRecognizerTypeUserCustom;
+  snprintf(command.init_recognizer.recognizer_dsp_path,
+           AS_RECOGNIZER_FILE_PATH_LEN,
+           "%s", dsp_path);
+
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_INIT_RECOGNIZER_CMPLT)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::startRecognizer(void)
+{
+  AudioCommand command;
+
+  command.header.packet_length = LENGTH_START_RECOGNIZER;
+  command.header.command_code  = AUDCMD_START_RECOGNIZER;
+  command.header.sub_code      = 0x00;
+
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_START_RECOGNIZER_CMPLT)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::stopRecognizer(void)
+{
+  AudioCommand command;
+
+  command.header.packet_length = LENGTH_STOP_RECOGNIZER;
+  command.header.command_code  = AUDCMD_STOP_RECOGNIZER;
+  command.header.sub_code      = 0x00;
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_STOP_RECOGNIZER_CMPLT)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initPreProcessDsp(void)
+{
+  /* Tentative!!
+   * From the arduino environment, cannot understand command format of
+   * Custom(PreProcess) DSP. So, here, parameters type are tentative.
+   */
+
+  struct InitParam : public CustomprocCommand::CmdBase
+  {
+    uint32_t param1;
+    uint32_t param2;
+    uint32_t param3;
+    uint32_t param4;
+  };
+
+  static InitParam s_initparam;
+
+  s_initparam.param1 = 0;
+  s_initparam.param2 = 0;
+  s_initparam.param3 = 0;
+  s_initparam.param4 = 0;
+
+  AudioCommand command;
+  command.header.packet_length = LENGTH_INIT_PREPROCESS_DSP;
+  command.header.command_code  = AUDCMD_INIT_PREPROCESS_DSP;
+  command.header.sub_code      = 0x00;
+  command.init_preproc_param.packet_addr = reinterpret_cast<uint8_t *>(&s_initparam);
+  command.init_preproc_param.packet_size = sizeof(s_initparam);
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_INIT_PREPROCESS_DSP_CMPLT)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::setPreProcessDsp(void)
+{
+  /* Tentative!!
+   * From the arduino environment, cannot understand command format of
+   * Custom(PreProcess) DSP. So, here, parameters type are tentative.
+   */
+
+  struct SetParam : public CustomprocCommand::CmdBase
+  {
+    uint32_t param1;
+    uint32_t param2;
+    uint32_t param3;
+    uint32_t param4;
+  };
+
+  static SetParam s_setparam;
+
+  s_setparam.param1 = true;
+  s_setparam.param2 = 99;
+  s_setparam.param3 = 0;
+  s_setparam.param4 = 0;
+
+  AudioCommand command;
+  command.header.packet_length = LENGTH_SET_PREPROCESS_DSP;
+  command.header.command_code  = AUDCMD_SET_PREPROCESS_DSP;
+  command.header.sub_code      = 0x00;
+  command.set_preproc_param.packet_addr = reinterpret_cast<uint8_t *>(&s_setparam);
+  command.set_preproc_param.packet_size = sizeof(s_setparam);
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_SET_PREPROCESS_DSP_CMPLT)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initRecognizerDsp(RecognizerDspType dsp_type)
+{
+  /* Check Recognizer DSP type. */
+
+  if (dsp_type != RecognizerRecaiusDsp)
+    {
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  /* Send Initialze command. */
+
+  struct InitRcgParam : public CustomprocCommand::CmdBase
+  {
+    uint32_t param1;
+    uint32_t param2;
+    uint32_t param3;
+    uint32_t param4;
+  };
+
+  static InitRcgParam s_initrcgparam;
+  s_initrcgparam.param1 = 500;
+  s_initrcgparam.param2 = 600;
+  s_initrcgparam.param3 = 0;
+  s_initrcgparam.param4 = 0;
+
+  AudioCommand command;
+
+  command.header.packet_length = LENGTH_INIT_RECOGNIZER_DSP;
+  command.header.command_code  = AUDCMD_INIT_RECOGNIZER_DSP;
+  command.header.sub_code      = 0x00;
+  command.init_rcg_param.packet_addr = reinterpret_cast<uint8_t *>(&s_initrcgparam);
+  command.init_rcg_param.packet_size = sizeof(s_initrcgparam);
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_INIT_RECOGNIZER_DSP_CMPLT)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
+      print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::setRecognizerDsp(RecognizerDspType dsp_type)
+{
+  /* Check Recognizer DSP type. */
+
+  if (dsp_type != RecognizerRecaiusDsp)
+    {
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  /* Send Set command. */
+
+  struct SetRcgParam : public CustomprocCommand::CmdBase
+  {
+    uint32_t param1;
+    int32_t param2;
+    int32_t param3;
+    int32_t param4;
+  };
+
+  static SetRcgParam s_setrcgparam;
+  s_setrcgparam.param1 = true;
+  s_setrcgparam.param2 = -1;
+  s_setrcgparam.param3 = -1;
+  s_setrcgparam.param4 = -1;
+
+  AudioCommand command;
+  command.header.packet_length = LENGTH_SET_RECOGNIZER_DSP;
+  command.header.command_code  = AUDCMD_SET_RECOGNIZER_DSP;
+  command.header.sub_code      = 0x00;
+  command.init_rcg_param.packet_addr = reinterpret_cast<uint8_t *>(&s_setrcgparam);
+  command.init_rcg_param.packet_size = sizeof(s_setrcgparam);
+  AS_SendAudioCommand(&command);
+
+  AudioResult result;
+  AS_ReceiveAudioResult(&result);
+
+  if (result.header.result_code != AUDRLT_SET_RECOGNIZER_DSP_CMPLT)
+    {
+      print_err("ERROR: Command (0x%x) fails. Result code(0x%x) Module id(0x%x) Error code(0x%x) Error subcode(0x%x)\n",
+              command.header.command_code, result.header.result_code, result.error_response_param.module_id, result.error_response_param.error_code, result.error_response_param.error_sub_code);
       print_dbg("ERROR: %s\n", error_msg[result.error_response_param.error_code]);
       return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
     }
@@ -2113,4 +2486,107 @@ err_t AudioClass::setFreqSynthesizer(uint8_t channel_no, uint32_t frequency)
   AS_SetMediaSynthesizer(&set_param);
 
   return receive_object_reply(__LINE__);
+}
+
+/*--------------------------------------------------------------------------*/
+void AudioClass::setI2s1ToSp(void)
+{
+  CXD56_AUDIO_ECODE err;
+
+  /* app_set_through_status */
+
+  err = cxd56_audio_set_spout(true);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  err = cxd56_audio_poweron();
+  if (err != CXD56_AUDIO_ECODE_OK && err != CXD56_AUDIO_ECODE_POW_STATE)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  err = cxd56_audio_en_input();
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  err = cxd56_audio_en_output();
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* app_init_mic_gain */
+
+  cxd56_audio_mic_gain_t  mic_gain;
+
+  mic_gain.gain[0] = 0;
+  mic_gain.gain[1] = 0;
+  mic_gain.gain[2] = 0;
+  mic_gain.gain[3] = 0;
+  mic_gain.gain[4] = 0;
+  mic_gain.gain[5] = 0;
+  mic_gain.gain[6] = 0;
+  mic_gain.gain[7] = 0;
+
+  err = cxd56_audio_set_micgain(&mic_gain);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* Mute */
+
+  board_external_amp_mute_control(true);
+
+  /* app_set_volume */
+
+  err = cxd56_audio_set_vol(CXD56_AUDIO_VOLID_MIXER_IN1, 0);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+  err = cxd56_audio_set_vol(CXD56_AUDIO_VOLID_MIXER_IN2, AS_VOLUME_MUTE);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+  err = cxd56_audio_set_vol(CXD56_AUDIO_VOLID_MIXER_OUT, -160/*db*/);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* app_set_through_path */
+
+  cxd56_audio_signal_t sig_id;
+  cxd56_audio_sel_t    sel_info;
+
+  sig_id   = CXD56_AUDIO_SIG_I2S0;
+
+  sel_info.au_dat_sel1 = false;
+  sel_info.au_dat_sel2 = false;
+  sel_info.cod_insel2  = true;
+  sel_info.cod_insel3  = false;
+  sel_info.src1in_sel  = false;
+  sel_info.src2in_sel  = false;
+
+  err = cxd56_audio_set_datapath(sig_id, sel_info);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  err = cxd56_audio_en_i2s_io();
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* Mute cancel */
+
+  board_external_amp_mute_control(false);
 }
