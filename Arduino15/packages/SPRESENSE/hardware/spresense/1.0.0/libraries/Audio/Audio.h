@@ -962,7 +962,19 @@ public:
    */
    err_t setRecognizerDsp(RecognizerDspType dsp_type);
 
+  /**
+   * @brief Set I2S input, I2S output
+   *
+   */
+
   void setI2s1ToSp(void);
+
+  /**
+   * @brief Set Mic input, speaker output
+   *
+   */
+
+  void setMicToSp(void);
 
   /* @brief Synthesizer */
 
@@ -1037,6 +1049,7 @@ private:
   err_t init_recorder_pcm(AudioCommand* command, uint32_t sampling_rate, uint8_t bit_length, uint8_t channel_number);
 
   /* Functions for initialization on player mode. */
+
   err_t set_output(uint8_t device, uint8_t sp_drv);
 
   err_t write_fifo(int, char*, uint32_t, CMN_SimpleFifoHandle*);

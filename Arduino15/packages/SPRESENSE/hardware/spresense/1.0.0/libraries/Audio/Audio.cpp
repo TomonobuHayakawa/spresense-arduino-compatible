@@ -2590,3 +2590,108 @@ void AudioClass::setI2s1ToSp(void)
 
   board_external_amp_mute_control(false);
 }
+
+/*--------------------------------------------------------------------------*/
+void AudioClass::setMicToSp(void)
+{
+  CXD56_AUDIO_ECODE err;
+
+  /* app_set_through_status */
+
+  err = cxd56_audio_set_spout(true);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  err = cxd56_audio_poweron();
+  if (err != CXD56_AUDIO_ECODE_OK && err != CXD56_AUDIO_ECODE_POW_STATE)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  cxd56_audio_set_spdriver(CXD56_AUDIO_SP_DRV_4DRIVER);
+
+  err = cxd56_audio_en_input();
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  err = cxd56_audio_en_output();
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* app_init_mic_gain */
+
+  cxd56_audio_mic_gain_t  mic_gain;
+
+  mic_gain.gain[0] = 0;
+  mic_gain.gain[1] = 0;
+  mic_gain.gain[2] = 0;
+  mic_gain.gain[3] = 0;
+  mic_gain.gain[4] = 0;
+  mic_gain.gain[5] = 0;
+  mic_gain.gain[6] = 0;
+  mic_gain.gain[7] = 0;
+
+  err = cxd56_audio_set_micgain(&mic_gain);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* Mute */
+
+  board_external_amp_mute_control(true);
+
+  /* app_set_volume */
+
+  err = cxd56_audio_set_vol(CXD56_AUDIO_VOLID_MIXER_IN1, 0);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+  err = cxd56_audio_set_vol(CXD56_AUDIO_VOLID_MIXER_IN2, AS_VOLUME_MUTE);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+  err = cxd56_audio_set_vol(CXD56_AUDIO_VOLID_MIXER_OUT, -160/*db*/);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* Set through path */
+
+  cxd56_audio_signal_t sig_id;
+  cxd56_audio_sel_t    sel_info;
+
+  sig_id = CXD56_AUDIO_SIG_MIC1;
+
+  sel_info.au_dat_sel1 = true;
+  sel_info.au_dat_sel2 = false;
+  sel_info.cod_insel2  = true;
+  sel_info.cod_insel3  = false;
+  sel_info.src1in_sel  = false;
+  sel_info.src2in_sel  = false;
+
+  err = cxd56_audio_set_datapath(sig_id, sel_info);
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  err = cxd56_audio_en_i2s_io();
+  if (err != CXD56_AUDIO_ECODE_OK)
+    {
+      printf("[%d] 0x%04X\n", __LINE__, err);
+    }
+
+  /* Mute cancel */
+
+  board_external_amp_mute_control(false);
+}
