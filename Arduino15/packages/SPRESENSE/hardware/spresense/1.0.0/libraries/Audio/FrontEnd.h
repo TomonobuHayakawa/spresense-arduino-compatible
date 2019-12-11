@@ -160,6 +160,15 @@ public:
       ObjectConnector::Destination dest /**< Destination of outgoing data from FrontEnd */
   );
 
+  err_t init(
+      uint8_t channel_number,           /**< Set chennel number. AS_CHANNEL_MONO or AS_CHANNEL_STEREO, 2CH, 4CH, 8CH */
+      uint8_t bit_length,               /**< Set bit length. AS_BITLENGTH_16 or AS_BITLENGTH_24 */
+      uint32_t samples_per_frame,       /**< Number of Samples per one frame */
+      ObjectConnector::Destination dest, /**< Destination of outgoing data from FrontEnd */
+      uint8_t preproc_type,
+      const char *dsp_path
+  );
+
   /**
    * @brief Initialize the FrontEnd 
    *
@@ -175,6 +184,16 @@ public:
       uint32_t samples_per_frame, /**< Number of Samples per one frame */
       uint8_t data_path,          /**< Set capture data path. AsDataPathCallback or AsDataPathMessage */ 
       AsDataDest dest             /**< Destination of outgoing data from FrontEnd */
+  );
+
+  err_t init(
+      uint8_t channel_number,     /**< Set chennel number. AS_CHANNEL_MONO or AS_CHANNEL_STEREO, 2CH, 4CH, 8CH */
+      uint8_t bit_length,         /**< Set bit length. AS_BITLENGTH_16 or AS_BITLENGTH_24 */
+      uint32_t samples_per_frame, /**< Number of Samples per one frame */
+      uint8_t data_path,          /**< Set capture data path. AsDataPathCallback or AsDataPathMessage */ 
+      AsDataDest dest,            /**< Destination of outgoing data from FrontEnd */
+      uint8_t preproc_type,
+      const char *dsp_path
   );
 
   /**
