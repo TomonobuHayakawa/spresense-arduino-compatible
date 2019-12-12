@@ -220,6 +220,7 @@ err_t FrontEnd::init(uint8_t channel_number,
   snprintf(frontend_init.dsp_path, sizeof(frontend_init.dsp_path), "%s", dsp_path);
   frontend_init.data_path         = data_path;
   frontend_init.dest              = dest;
+  frontend_init.out_fs            = AS_SAMPLINGRATE_16000;
 
   result = AS_InitMicFrontend(&frontend_init);
   if (!result)

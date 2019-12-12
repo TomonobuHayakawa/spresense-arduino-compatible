@@ -43,6 +43,7 @@
 #define MEM_LAYOUT_RECORDINGPLAYER (2)
 #define MEM_LAYOUT_PLAYERANDRECOGNIZER (3)
 #define MEM_LAYOUT_SYNTHESIZER     (4)
+#define MEM_LAYOUT_RECOGNIZER      (5)
 #define MEM_LAYOUT_SENSORS  (0)         /* Common with Audio player */
 
 #endif /* __AUDIO_LAYOUT_H_INCLUDED__ */

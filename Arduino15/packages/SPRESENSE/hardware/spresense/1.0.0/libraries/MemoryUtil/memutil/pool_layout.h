@@ -129,6 +129,14 @@ extern const PoolSectionAttr MemoryPoolLayouts[NUM_MEM_SECTIONS][NUM_MEM_LAYOUTS
       { S0_PF1_APU_CMD_POOL            , BasicType  ,  10,  true, 0x000df390, 0x00000398 },  /* COMMON_WORK_AREA */
       { S0_NULL_POOL, 0, 0, false, 0, 0 },
     },
+    {/* Layout:5 */
+     /* pool_ID                          type         seg  fence  addr        size         */
+      { S0_MIC_IN_BUF_POOL             , BasicType  ,   5,  true, 0x000c0008, 0x00014000 },  /* COMMON_WORK_AREA */
+      { S0_OUTPUT_BUF_POOL             , BasicType  ,   5,  true, 0x000d4010, 0x0000f000 },  /* COMMON_WORK_AREA */
+      { S0_PRE_APU_CMD_POOL            , BasicType  ,   3,  true, 0x000e3018, 0x00000114 },  /* COMMON_WORK_AREA */
+      { S0_RCG_APU_CMD_POOL            , BasicType  ,   3,  true, 0x000e3138, 0x00000114 },  /* COMMON_WORK_AREA */
+      { S0_NULL_POOL, 0, 0, false, 0, 0 },
+    },
   },
   {  /* Section:1 */
     {/* Layout:0 */
