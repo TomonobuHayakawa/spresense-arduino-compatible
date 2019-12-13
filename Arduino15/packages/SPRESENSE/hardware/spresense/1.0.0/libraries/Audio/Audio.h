@@ -49,6 +49,7 @@ class File;
 #include <audio/utilities/wav_containerformat.h>
 #include <audio/utilities/wav_containerformat_parser.h>
 #include <audio/utilities/frame_samples.h>
+#include <audio/dsp_framework/customproc_command_base.h>
 #include <memutils/simple_fifo/CMN_SimpleFifo.h>
 
 #define WRITE_FIFO_FRAME_NUM  (8)
@@ -217,7 +218,7 @@ public:
    *
    */
   err_t setPlayerMode(
-      uint8_t device, /**< Select output device. AS_SETPLAYER_OUTPUTDEVICE_SPHP or 
+      uint8_t device, /**< Select output device. AS_SETPLAYER_OUTPUTDEVICE_SPHP or
                            AS_SETPLAYER_OUTPUTDEVICE_I2SOUTPUT. */
       uint8_t sp_drv /**< Select audio speaker driver mode. AS_SP_DRV_MODE_LINEOUT or
                           AS_SP_DRV_MODE_1DRIVER or AS_SP_DRV_MODE_2DRIVER or AS_SP_DRV_MODE_4DRIVER */
@@ -231,7 +232,7 @@ public:
    *
    */
   err_t setPlayerMode(
-      uint8_t device,          /**< Select output device. AS_SETPLAYER_OUTPUTDEVICE_SPHP or 
+      uint8_t device,          /**< Select output device. AS_SETPLAYER_OUTPUTDEVICE_SPHP or
                                     AS_SETPLAYER_OUTPUTDEVICE_I2SOUTPUT. */
       uint8_t sp_drv,          /**< Select audio speaker driver mode. AS_SP_DRV_MODE_LINEOUT or
                                     AS_SP_DRV_MODE_1DRIVER or AS_SP_DRV_MODE_2DRIVER or AS_SP_DRV_MODE_4DRIVER */
@@ -313,9 +314,29 @@ public:
   );
 
   /**
-   * @enum ThroughInput
+   * @brief Set Audio Library Mode to Sound Recognizer.
    *
-   * @brief Input select parameter at baseband through mode.
+   * @details This function switches the mode of the Audio library to Sound Recongizer.
+   *          For mode details, follow the state transition chart on the developer guide.
+   *
+   *          This function cannot be called after transition to "Sound Recognizer mode".
+   *          To return to the original state, please call setReadyMode ().
+   *
+   *          In this function, setting HW necessary for sound recognizing.
+   *
+   *          This function can set input interface MIC.
+   *          The type of MIC is determined by configuration of sdk. The default is an analog microphone.
+   *          The value of CXD56_AUDIO_MIC_CHANNEL_SEL can be used to select the analog microphone
+   *          or digital microphone and assign the microphone channel.
+   *          Refer to the document for the setting value.
+   *          If you change the settings, import sdk again.
+   *
+   */
+  err_t setRecognizerMode(void);
+
+  /**
+   * @enum Input select parameter at baseband through mode
+   *
    */
 
   typedef enum
@@ -575,6 +596,28 @@ public:
       uint8_t channel /**< Set channnel number. AS_CHANNEL_MONO, AS_CHANNEL_STEREO, AS_CHANNEL_4CH, or etc...  */
   );
 
+  err_t initRecognizer(
+      uint8_t ch_num,
+      uint8_t bit_length,
+      uint32_t samples,
+      RecognizerFindCallback fcb
+  );
+
+  /**
+   * @brief Initialize recognizer
+   *
+   * @details This function initializes and sets Recognizer action.
+   *          When recognizer do not start, you can call it as many times as you like.
+   *
+   */
+  err_t initRecognizer(
+      uint8_t ch_num,         /**< Set channnel number. AS_CHANNEL_MONO, AS_CHANNEL_STEREO, AS_CHANNEL_4CH, or etc...  */
+      uint8_t bit_length,     /**< Set bit length. AS_BITLENGTH_16 or AS_BITLENGTH_24 */
+      uint32_t samples,
+      const char *codec_path,  /**< Set DSP Binary path. Maximum length is 24 bytes.*/
+      RecognizerFindCallback fcb
+  );
+
   /**
    * @brief Start Player
    *
@@ -605,6 +648,9 @@ public:
    *
    */
   err_t startRecorder(void);
+
+  err_t startRecognizer(void);
+
 
   /**
    * @brief Stop Player
@@ -647,6 +693,8 @@ public:
    *
    */
   err_t stopRecorder(void);
+
+  err_t stopRecognizer(void);
 
   /**
    * @brief Set Beep Sound
@@ -853,6 +901,69 @@ public:
      return m_es_size;
    }
 
+  /**
+   * @brief Init PreProcess DSP.
+   *
+   * @details This function initialize PreProcess DSP.
+   *
+   *          The formant of Initalize DSP command is not open.
+   *          command format and parameter values are created internally.
+   *          Application has no need to create command.
+   *
+   */
+   err_t initPreProcessDsp(void);
+
+  /**
+   * @brief Set PreProcess DSP.
+   *
+   * @details This function Set PreProcess DSP.
+   *
+   *          The formant of Set DSP command is not open.
+   *          command format and parameter values are created internally.
+   *          Application has no need to create command.
+   *
+   */
+   err_t setPreProcessDsp(void);
+
+  /**
+   * @enum Types of Recognizer DSP (Support only REAIUS DSP)
+   *
+   */
+
+  typedef enum
+  {
+    RecognizerRecaiusDsp = 0
+
+  } RecognizerDspType;
+
+  /**
+   * @brief Init Recognitzer DSP.
+   *
+   * @details This function initialize Recognizer DSP.
+   *
+   *          The formant of Initalize DSP command is not open.
+   *          Therefore, please set RecognizerDspType to this API, and
+   *          command format and parameter values are created internally.
+   *          Application has no need to create command.
+   *
+   */
+   err_t initRecognizerDsp(RecognizerDspType dsp_type);
+
+  /**
+   * @brief Set Recognitzer DSP.
+   *
+   * @details This function sets Recognizer DSP.
+   *
+   *          The formant of Set DSP command is not open.
+   *          Therefore, please set RecognizerDspType to this API, and
+   *          command format and parameter values are created internally.
+   *          Application has no need to create command.
+   *
+   */
+   err_t setRecognizerDsp(RecognizerDspType dsp_type);
+
+  void setI2s1ToSp(void);
+
   /* @brief Synthesizer */
 
   err_t setSynthesizer(void);
@@ -903,6 +1014,7 @@ private:
   err_t begin_manager(void);
   err_t begin_player(void);
   err_t begin_recorder(void);
+  err_t begin_recognizer(void);
   err_t begin_synthesizer(void);
 
   err_t end_manager(void);
@@ -916,8 +1028,9 @@ private:
   err_t powerOff(void);
 
   /* Functions for initialization Encoder */
-	
+
   err_t initMicFrontend(uint8_t ch_num, uint8_t bit_length, uint16_t sample);
+  err_t initMicFrontend(uint8_t ch_num, uint8_t bit_length, uint16_t samples, AsMicFrontendPreProcType type, AsFrontendDataDest dest, const char *path);
   err_t init_recorder_wav(AudioCommand* command, uint32_t sampling_rate, uint8_t bit_length, uint8_t channel_number);
   err_t init_recorder_mp3(AudioCommand* command, uint32_t sampling_rate, uint8_t bit_length, uint8_t channel_number);
   err_t init_recorder_opus(AudioCommand* command, uint32_t sampling_rate, uint8_t bit_length, uint8_t channel_number);

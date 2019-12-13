@@ -172,9 +172,20 @@ err_t FrontEnd::init(uint8_t channel_number,
                      uint32_t samples_per_frame,
                      ObjectConnector::Destination dest)
 {
+  return init(channel_number, bit_length, samples_per_frame, dest, AsMicFrontendPreProcThrough, "");
+}
+
+/*--------------------------------------------------------------------------*/
+err_t FrontEnd::init(uint8_t channel_number,
+                     uint8_t bit_length,
+                     uint32_t samples_per_frame,
+                     ObjectConnector::Destination dest,
+                     uint8_t preproc_type,
+                     const char *dsp_path)
+{
   AsDataDest asdest = ObjectConnector::connect(dest);
 
-  return init(channel_number, bit_length, samples_per_frame, AsDataPathMessage, asdest);
+  return init(channel_number, bit_length, samples_per_frame, AsDataPathMessage, asdest, preproc_type, dsp_path);
 }
  
 /*--------------------------------------------------------------------------*/
@@ -183,6 +194,18 @@ err_t FrontEnd::init(uint8_t channel_number,
                      uint32_t samples_per_frame,
                      uint8_t data_path,
                      AsDataDest dest)
+{
+  return init(channel_number, bit_length, samples_per_frame, AsDataPathMessage, dest, AsMicFrontendPreProcThrough, "");
+}
+
+/*--------------------------------------------------------------------------*/
+err_t FrontEnd::init(uint8_t channel_number,
+                     uint8_t bit_length,
+                     uint32_t samples_per_frame,
+                     uint8_t data_path,
+                     AsDataDest dest,
+                     uint8_t preproc_type,
+                     const char *dsp_path)
 {
   bool result;
 
@@ -193,10 +216,11 @@ err_t FrontEnd::init(uint8_t channel_number,
   frontend_init.channel_number    = channel_number;
   frontend_init.bit_length        = bit_length;
   frontend_init.samples_per_frame = samples_per_frame;
-  frontend_init.preproc_type      = AsMicFrontendPreProcThrough;
-  memset(frontend_init.dsp_path, 0, sizeof(frontend_init.dsp_path));
+  frontend_init.preproc_type      = preproc_type;
+  snprintf(frontend_init.dsp_path, sizeof(frontend_init.dsp_path), "%s", dsp_path);
   frontend_init.data_path         = data_path;
   frontend_init.dest              = dest;
+  frontend_init.out_fs            = AS_SAMPLINGRATE_16000;
 
   result = AS_InitMicFrontend(&frontend_init);
   if (!result)
