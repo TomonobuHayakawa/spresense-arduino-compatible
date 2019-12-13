@@ -286,10 +286,18 @@ err_t MediaPlayer::stop(PlayerId id, uint8_t mode)
 
   if (id == Player0)
     {
+    if (mode == AS_STOPPLAYER_NORMAL)
+      {
+        CMN_SimpleFifoClear(&m_player0_simple_fifo_handle);
+      }
       AS_StopPlayer(AS_PLAYER_ID_0, &player_stop);
     }
   else
     {
+    if (mode == AS_STOPPLAYER_NORMAL)
+      {
+        CMN_SimpleFifoClear(&m_player1_simple_fifo_handle);
+      }
       AS_StopPlayer(AS_PLAYER_ID_1, &player_stop);
     }
 
