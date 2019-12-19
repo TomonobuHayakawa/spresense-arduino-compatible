@@ -37,10 +37,10 @@
 #ifndef MSGQ_ID_H_INCLUDED
 #define MSGQ_ID_H_INCLUDED
 
-/* Message area size: 10860 bytes */
+/* Message area size: 11000 bytes */
 
 #define MSGQ_TOP_DRM 0xfd000
-#define MSGQ_END_DRM 0xffa6c
+#define MSGQ_END_DRM 0xffaf8
 
 /* Message area fill value after message poped */
 
@@ -333,22 +333,22 @@
 /************************************************************************/
 #define MSGQ_AUD_SYNTHESIZER_QUE_BLOCK_DRM 0xfd83c
 #define MSGQ_AUD_SYNTHESIZER_N_QUE_DRM 0xff418
-#define MSGQ_AUD_SYNTHESIZER_N_SIZE 48
+#define MSGQ_AUD_SYNTHESIZER_N_SIZE 64
 #define MSGQ_AUD_SYNTHESIZER_N_NUM 5
 #define MSGQ_AUD_SYNTHESIZER_H_QUE_DRM 0xffffffff
 #define MSGQ_AUD_SYNTHESIZER_H_SIZE 0
 #define MSGQ_AUD_SYNTHESIZER_H_NUM 0
 /************************************************************************/
 #define MSGQ_AUD_OSCDSP_QUE_BLOCK_DRM 0xfd880
-#define MSGQ_AUD_OSCDSP_N_QUE_DRM 0xff508
-#define MSGQ_AUD_OSCDSP_N_SIZE 20
+#define MSGQ_AUD_OSCDSP_N_QUE_DRM 0xff558
+#define MSGQ_AUD_OSCDSP_N_SIZE 32
 #define MSGQ_AUD_OSCDSP_N_NUM 5
 #define MSGQ_AUD_OSCDSP_H_QUE_DRM 0xffffffff
 #define MSGQ_AUD_OSCDSP_H_SIZE 0
 #define MSGQ_AUD_OSCDSP_H_NUM 0
 /************************************************************************/
 #define MSGQ_SEN_MGR_QUE_BLOCK_DRM 0xfd8c4
-#define MSGQ_SEN_MGR_N_QUE_DRM 0xff56c
+#define MSGQ_SEN_MGR_N_QUE_DRM 0xff5f8
 #define MSGQ_SEN_MGR_N_SIZE 80
 #define MSGQ_SEN_MGR_N_NUM 16
 #define MSGQ_SEN_MGR_H_QUE_DRM 0xffffffff

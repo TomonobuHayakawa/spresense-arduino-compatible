@@ -17,9 +17,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <SDHCI.h>
 #include <Audio.h>
-#include <SD.h>
 
+#define RECORD_FILE_NAME "Sound.mp3"
+
+SDClass theSD;
 AudioClass *theAudio;
 
 File myFile;
@@ -47,7 +50,7 @@ static void audio_attention_cb(const ErrorAttentionParam *atprm)
  *
  * Select input device as microphone <br>
  * Initialize filetype to stereo mp3 with 48 Kb/s sampling rate <br>
- * Open "Sound.mp3" file in write mode
+ * Open RECORD_FILE_NAME file in write mode
  */
 
 /* Recording time[second] */
@@ -71,12 +74,8 @@ static const int32_t recoding_size = recoding_byte_per_second * recoding_time;
 
 void setup()
 {
- /* Initialize SD Card */
-  while (!SD.begin()) {
-    ; /* wait until SD card is mounted. */
-  }
- 
   theAudio = AudioClass::getInstance();
+
   theAudio->begin(audio_attention_cb);
 
   puts("initialization Audio Library");
@@ -92,13 +91,24 @@ void setup()
   puts("Init Recorder!");
 
   /* Open file for data write on SD card */
-  myFile = SD.open("Sound.mp3", FILE_WRITE);
+
+  theSD.begin();
+
+  if (theSD.exists(RECORD_FILE_NAME))
+    {
+      printf("Remove existing file [%s].\n", RECORD_FILE_NAME);
+      theSD.remove(RECORD_FILE_NAME);
+    }
+
+  myFile = theSD.open(RECORD_FILE_NAME, FILE_WRITE);
   /* Verify file open */
   if (!myFile)
     {
       printf("File open error\n");
       exit(1);
     }
+
+  printf("Open! [%s]\n", RECORD_FILE_NAME);
 
   theAudio->startRecorder();
   puts("Recording Start!");

@@ -74,9 +74,9 @@ extern const MsgQueDef MsgqPoolDefs[NUM_MSGQ_POOLS] =
   { 0xff260, 48, 5, 0xffffffff, 0, 0 }, /* MSGQ_AUD_FRONTEND */
   { 0xff350, 20, 5, 0xffffffff, 0, 0 }, /* MSGQ_AUD_PREDSP */
   { 0xff3b4, 20, 5, 0xffffffff, 0, 0 }, /* MSGQ_AUD_RCGDSP */
-  { 0xff418, 48, 5, 0xffffffff, 0, 0 }, /* MSGQ_AUD_SYNTHESIZER */
-  { 0xff508, 20, 5, 0xffffffff, 0, 0 }, /* MSGQ_AUD_OSCDSP */
-  { 0xff56c, 80, 16, 0xffffffff, 0, 0 }, /* MSGQ_SEN_MGR */
+  { 0xff418, 64, 5, 0xffffffff, 0, 0 }, /* MSGQ_AUD_SYNTHESIZER */
+  { 0xff558, 32, 5, 0xffffffff, 0, 0 }, /* MSGQ_AUD_OSCDSP */
+  { 0xff5f8, 80, 16, 0xffffffff, 0, 0 }, /* MSGQ_SEN_MGR */
 };
 
 #endif /* MSGQ_POOL_H_INCLUDED */
