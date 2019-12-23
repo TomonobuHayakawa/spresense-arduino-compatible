@@ -1,5 +1,5 @@
 /*
- *  MediaPlayer.h - Audio include file for the Spresense SDK
+ *  OutputMixer.h - Output Mixer Object Header
  *  Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
@@ -132,6 +132,15 @@ public:
       uint8_t output_device,      /**< Select output device. HPOutputDevice or I2SOutputDevice */
       OutputMixerCallback omcb    /**< Sepcify callback function which is called to notify API results. */
   );
+
+  err_t activate(
+      AsOutputMixerHandle handle,
+      uint8_t output_device,
+      OutputMixerCallback omcb,
+      bool post_enable            /**< Set to true when using post DSP */
+  );
+
+  err_t initPostproc(AsOutputMixerHandle handle, void *p_data, int size);
 
   /**
    * @brief Send PCM data via OutputMixer 

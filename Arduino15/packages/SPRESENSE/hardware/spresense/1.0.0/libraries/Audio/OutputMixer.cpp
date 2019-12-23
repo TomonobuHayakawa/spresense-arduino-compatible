@@ -1,5 +1,5 @@
 /*
- *  OutputMixer.cpp - SPI implement file for the Spresense SDK
+ *  OutputMixer.cpp - Output Mixer Object
  *  Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  *  This library is free software; you can redistribute it and/or
@@ -95,9 +95,19 @@ err_t OutputMixer::activate(AsOutputMixerHandle handle, OutputMixerCallback omcb
   return activate(handle, HPOutputDevice, omcb);
 }
 
+/*--------------------------------------------------------------------------*/
 err_t OutputMixer::activate(AsOutputMixerHandle handle,
                             uint8_t output_device,
                             OutputMixerCallback omcb)
+{
+  return activate(handle, output_device, omcb, false);
+}
+
+/*--------------------------------------------------------------------------*/
+err_t OutputMixer::activate(AsOutputMixerHandle handle,
+                            uint8_t output_device,
+                            OutputMixerCallback omcb,
+                            bool post_enable)
 {
   AsActivateOutputMixer mixer_act;
 
@@ -105,7 +115,31 @@ err_t OutputMixer::activate(AsOutputMixerHandle handle,
   mixer_act.mixer_type    = MainOnly;
   mixer_act.cb            = omcb;
 
+  if (post_enable)
+    {
+      mixer_act.post_enable = PostFilterEnable;
+    }
+  else
+    {
+      mixer_act.post_enable = PostFilterDisable;
+    }
+
   AS_ActivateOutputMixer(handle, &mixer_act);
+
+  return OUTPUTMIXER_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t OutputMixer::initPostproc(AsOutputMixerHandle handle, void *p_data, int size)
+{
+  /* Initialize postproc */
+
+  AsInitPostProc  init;
+
+  init.addr = (uint8_t *)p_data;
+  init.size = size;
+
+  AS_InitPostprocOutputMixer(handle, &init);
 
   return OUTPUTMIXER_ECODE_OK;
 }
