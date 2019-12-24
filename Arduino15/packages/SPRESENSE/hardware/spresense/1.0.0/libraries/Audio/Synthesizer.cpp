@@ -27,6 +27,7 @@
 #include <arch/board/board.h>
 
 #include "Synthesizer.h"
+#include "OutputMixer.h"
 #include "MemoryUtil.h"
 
 extern "C" {
@@ -52,11 +53,9 @@ err_t Synthesizer::create(AudioAttentionCb attcb)
 {
   AsCreateSynthesizerParam_t synthe_create_param;
 
-  synthe_create_param.msgq_id.mixer       = MSGQ_AUD_OUTPUT_MIX;
   synthe_create_param.msgq_id.synthesizer = MSGQ_AUD_SYNTHESIZER;
   synthe_create_param.msgq_id.mng         = MSGQ_AUD_MGR;
   synthe_create_param.msgq_id.dsp         = MSGQ_AUD_DSP;
-  synthe_create_param.pool_id.input       = S0_NULL_POOL;
   synthe_create_param.pool_id.output      = S0_REND_PCM_BUF_POOL;
   synthe_create_param.pool_id.dsp         = S0_DEC_APU_CMD_POOL;
   
@@ -104,15 +103,18 @@ err_t Synthesizer::init(AsSynthesizerWaveMode type,
 {
   AsInitSynthesizerParam initparam;
 
-  initparam.type          = type;
-  initparam.channel_num   = channel_num;
-  initparam.sampling_rate = AS_SAMPLINGRATE_48000;
-  initparam.bit_width     = AS_BITLENGTH_16;
-  initparam.sample_size   = 240;
-  initparam.attack        = attack;
-  initparam.decay         = decay;
-  initparam.sustain       = sustain;
-  initparam.release       = release;
+  initparam.type                = type;
+  initparam.channel_num         = channel_num;
+  initparam.sampling_rate       = AS_SAMPLINGRATE_48000;
+  initparam.bit_width           = AS_BITLENGTH_16;
+  initparam.data_path           = AsSynthesizerDataPathMessage;
+  initparam.dest.msg.id         = MSGQ_AUD_OUTPUT_MIX;
+  initparam.dest.msg.identifier = OutputMixer0;
+  initparam.sample_size         = 240;
+  initparam.attack              = attack;
+  initparam.decay               = decay;
+  initparam.sustain             = sustain;
+  initparam.release             = release;
 
   if (channel_num > AsSynthesizerMaxChannelNum)
     {
