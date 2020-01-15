@@ -1,137 +1,71 @@
 # Welcome to Spresense libs for Arduino compatible project
 
-Clone this repository.
+本家のReadmeは、こちら。  
+https://github.com/sonydevworld/spresense-arduino-compatible/blob/master/README.md  
 
-```
-$ git clone git@github.com:sonydevworld/spresense-arduino-compatible.git
-```
 
-# Directory structure
+# Spresense Arduino/SDK のαリリースについて  
 
-```
-spresense-arduino-compatible
-|-- Arduino15
-|   |-- packages/SPRESENSE           - Spresense packages
-|   |   |-- hardware
-|   |   |   `--spresense             - Spresense reference board codes
-|   |   |      `-- 1.0.0
-|   |   |          |-- cores
-|   |   |          |-- libraries
-|   |   |          `-- variants
-|   |   `-- tools                    - Necessary tool chain and prebuilt binaries
-|   |       |-- spresense-tools      - Spresense tools
-|   |       |   `-- 1.0.0
-|   |       |-- spresense-sdk        - Spresense SDK prebuilt binaries
-|   |       |   `-- 1.0.0
-|   |       `-- gcc-arm-none-eabi    - GCC compiler
-|   |           `-- 5.4.1
-|   `-- package_spresense_index.json - Arduino IDE configuration json file
-`-- tools                            - Import/Export tools
-```
+こちらでは、本線のリリースの先駆けて、トライアル用にα版として、以下の2つのパッケージをリリースしています。  
 
-# Getting started
-### [Spresense Arduino Library Getting Started Guide (English)](https://developer.sony.com/develop/spresense/docs/arduino_set_up_en.html)
+・楽器用のプロジェクト向け（シンセサイザ機能版）  
+・超高速ADCのプロジェクト向け（512kHz High Speed ADC版）  
 
-### [Spresense Arduino スタートガイド (日本語)](https://developer.sony.com/develop/spresense/docs/arduino_set_up_ja.html)
+注) 現時点で評価ができているものではありません。バグ等に関しての責任は負いかねます。  
+注) 現在提供のAPIは、暫定版です。正式版で変更される可能性があります。  
 
-# How to prepare Arduino environment
-## Pull or Import GCC and Prebuilt SDK
+これらをお試し頂いて、フィードバックをもらうことを目的としています。  
 
-```
-./tools/prepare_arduino.sh [OPTIONS...]
-```
 
-### Options
+## 楽器用のプロジェクト向け  
 
-#### For using local archive
+楽器作成などを行うために、以下の機能を入れ込んでパッケージを作成しています。  
+   - レコグナイザー機能 ※ライブラリ別。（契約メンバのみ）  
+   - シンセサイザ機能  
+   がArduinoで呼べるようになります。  
 
-| Option | Argument                          | Note                                           |
-|-------:|:----------------------------------|:-----------------------------------------------|
-| -g     | path/to/GCC-archive-path          | GCC archive path                               |
-| -s     | path/to/SDK-archive-path          | Prebuilt SDK archive path                      |
 
-#### For using local source code
+α版のinstallは、  
 
-| Option | Argument                          | Note                                           |
-|-------:|:----------------------------------|:-----------------------------------------------|
-| -S     | path/to/spresense-sdk-path        | Local Spresense SDK build root path            |
-| -v     | Board_variant                     | Target board variant (default:spresense)       |
-| -c     | spresense or spresense_sub        | Target SDK configuration (default: spresense)  |
-| -k     | release or debug                  | Target kernel configuration (default: release) |
-| -M     | "SDK" or "Kernel" or "SDK/Kernel" | Manual configuration by menuconfig             |
-| -G     | "SDK" or "Kernel" or "SDK/Kernel" | Manual configuration by gconfig                |
-| -Q     | "SDK" or "Kernel" or "SDK/Kernel" | Manual configuration by qconfig                |
-| -i     | -                                 | Do not change Kernel/SDK configuration         |
+Arduinoのファイル / 環境設定 の中の <br>
+追加ボードマネージャのURLに、 <br>
 
-#### Other option
+https://github.com/TomonobuHayakawa/spresense-arduino-compatible/releases/download/common/package_spresense_instrument_index.json <br>
 
-| Option | Argument                          | Note                                           |
-|-------:|:----------------------------------|:-----------------------------------------------|
-| -H     | Windows or Linux64 or Mac         | Arduino IDE Host OS                            |
-| -p     | -                                 | No network access option                       |
-| -h     | -                                 | Show help                                      |
+を追加してください。  
+これを追加すると、ボードマネージャの中に、  
+Spresense Instrument  
+というボードが新たに選択できます。  
 
-### Example
+楽器用のスケッチは、  
 
-#### Export Spresense SDK prebuilt binary for MainCore/Debug:Disabled from local repository.
+https://github.com/TomonobuHayakawa/Spresense-Playground/tree/master/sketches/Instruments  
 
-```
-$ ./tools/prepare_arduino.sh -S path/to/spresense -p
-```
+こちらにあります。
 
-#### Export Spresense SDK prebuilt binary for MainCore/Debug:Enabled from local repository.
+## 超高速ADCのプロジェクト向け
 
-```
-$ ./tools/prepare_arduino.sh -S path/to/spresense -k debug -p
-```
+AEセンシングなどのセンサ用ADCを超高速動作させるためのSDKになります。
+*低速・超低消費電力モードでのSCU動作はできなくなります。*  
 
-#### Export Spresense SDK prebuilt binary for SubCore/Debug:Disabled from local repository.
 
-```
-$ ./tools/prepare_arduino.sh -S path/to/spresense -c spresense_sub -k subcore-release -p
-```
+α版のinstallは、  
 
-#### Export Spresense SDK prebuilt binary for SubCore/Debug:Enabled from local repository.
+Arduinoのファイル / 環境設定 の中の <br>
+追加ボードマネージャのURLに、 <br>
 
-```
-$ ./tools/prepare_arduino.sh -S path/to/spresense -c spresense_sub -k subcore-debug -p
-```
+https://github.com/TomonobuHayakawa/spresense-arduino-compatible/releases/download/common/package_spresense_HighSpeedADC_index.json <br>
 
-#### Export Spresense SDK prebuilt binary for MainCore/Debug:Disabled from local repository *with configuration change*.
+を追加してください。  
+これを追加すると、ボードマネージャの中に、  
+Spresense HighSpeedADC  
+というボードが新たに選択できます。  
 
-```
-$ ./tools/prepare_arduino.sh -S path/to/spresense -M SDK/Kernel -p
-```
+サンプルスケッチは、  スケッチ例 -> Spresense HighSpeedADC用のスケッチ例の中の Sensingの中にある
 
-* Menu configuration will open twice as `NuttX Configuration` and `SDK configuration`
+application / capture_hpadc
 
-# Creating Arduino boards manager local install package
+になります。
 
-To create a Arduino boards manager files for manual installation simply type:
 
-```
-$ make
-```
 
-This command will generate the following files:
-
-```
-out/package_spresense_local_index.json
-out/staging/spresense-v*.*.*_local.tar.gz
-out/staging/spresense-tools-v*.*.*_local.tar.gz
-out/staging/spresense-sdk-v*.*.*_local.tar.gz
-```
-
-# Manual install
-
-1. Copy `out/staging` into *\<Arduino15\>* directory.
-2. Set *package_spresense_local_index.json URL* into `Additional Boards Manager URLs` in Arduino IDE.
-3. Install local spresense board package by `Boards Manager` in Arduino IDE as same as official package. 
-
-## *\<Arduino15\>*:
-* Windows: `%userprofile%\AppData\Local\Arduino15`
-* macOS: `~/Library/Arduino15`
-* Ubuntu: `~/.arduino15`
-
-## *package_spresense_local_index.json URL*:
-`file://path/to/out/package_spresense_local_index.json`
