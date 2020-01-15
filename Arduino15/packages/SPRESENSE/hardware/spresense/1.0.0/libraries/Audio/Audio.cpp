@@ -988,6 +988,36 @@ err_t AudioClass::writeFrames(PlayerId id, uint8_t *data, uint32_t write_size)
   return ret;
 }
 
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initPostProcessDsp(void *param, int size)
+{
+  /* Initialize PostProcess DSP */
+
+  AsInitPostProc  init;
+
+  init.addr = (uint8_t *)param;
+  init.size = size;
+
+  AS_InitPostprocOutputMixer(OutputMixer0, &init);
+
+  return AUDIOLIB_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::setPostProcessDsp(void *param, int size)
+{
+  /* Set PostProcess DSP */
+
+  AsSetPostProc  set;
+
+  set.addr = (uint8_t *)param;
+  set.size = size;
+
+  AS_SetPostprocOutputMixer(OutputMixer0, &set);
+
+  return AUDIOLIB_ECODE_OK;
+}
+
 /****************************************************************************
  * Recoder API on Audio Class
  ****************************************************************************/
@@ -2335,7 +2365,7 @@ err_t AudioClass::begin_synthesizer(void)
 
   AsCreateSynthesizerParam_t  syn;
 
-  syn.msgq_id.synthesizer = MSGQ_AUD_SOUND_EFFECT;
+  syn.msgq_id.synthesizer = MSGQ_AUD_SYNTHESIZER;
   syn.msgq_id.mng         = MSGQ_AUD_APP;
   syn.msgq_id.dsp         = MSGQ_AUD_DSP;
   syn.msgq_id.mixer       = MSGQ_AUD_OUTPUT_MIX;
@@ -2386,7 +2416,7 @@ static void outputMixerCallback(MsgQueId requester_dtq, MsgType msgtype, AsOutpu
 }
 
 /*--------------------------------------------------------------------------*/
-err_t AudioClass::setSynthesizer(void)
+err_t AudioClass::setSynthesizer(bool post_enable)
 {
   /* Set memory layout for memutil */
 
@@ -2412,20 +2442,17 @@ err_t AudioClass::setSynthesizer(void)
 
   mixer_act.output_device = HPOutputDevice;
   mixer_act.mixer_type    = MainOnly;
-  mixer_act.post_enable   = PostFilterEnable;
   mixer_act.cb            = outputMixerCallback;
+  if (post_enable)
+    {
+      mixer_act.post_enable = PostFilterEnable;
+    }
+  else
+    {
+      mixer_act.post_enable = PostFilterDisable;
+    }
 
   AS_ActivateOutputMixer(OutputMixer0, &mixer_act);
-
-  /* Initialize postproc */
-
-  AsInitPostProc  init;
-  uint8_t         temp[128];
-
-  init.addr = temp;
-  init.size = sizeof(temp);
-
-  AS_InitPostprocOutputMixer(OutputMixer0, &init);
 
   /* Activate Synthesizer */
 
@@ -2439,14 +2466,41 @@ err_t AudioClass::setSynthesizer(void)
 }
 
 /*--------------------------------------------------------------------------*/
-err_t AudioClass::initSynthesizer(const char *dps_path, uint8_t channel_num, uint32_t sampling_rate, uint8_t bit_width)
+err_t AudioClass::initSynthesizer(AsSynthesizerWaveMode type,
+                                  uint8_t               channel_num,
+                                  const char           *dps_path,
+                                  uint16_t              attack,
+                                  uint16_t              decay,
+                                  uint16_t              sustain,
+                                  uint16_t              release)
 {
   AsInitSynthesizerParam  init;
 
-  init.type          = AsSynthesizerSinWave;
+  init.type          = type;
   init.channel_num   = channel_num;
-  init.sampling_rate = sampling_rate;
-  init.bit_width     = bit_width;
+  init.sampling_rate = AS_SAMPLINGRATE_48000;
+  init.bit_width     = AS_BITLENGTH_16;
+  init.sample_size   = 240;
+  init.attack        = attack;
+  init.decay         = decay;
+  init.sustain       = sustain;
+  init.release       = release;
+
+  if (channel_num > AsSynthesizerMaxChannelNum)
+    {
+      print_err("Wrong number of channels!\n");
+      return AUDIOLIB_ECODE_AUDIOCOMMAND_ERROR;
+    }
+
+  /* Keep effect value */
+
+  for (int i = 0; i < channel_num; i++)
+    {
+      m_attack[i]  = attack;
+      m_decay[i]   = decay;
+      m_sustain[i] = sustain;
+      m_release[i] = release;
+    }
 
   strcpy(init.dsp_path, dps_path);
 
@@ -2457,6 +2511,20 @@ err_t AudioClass::initSynthesizer(const char *dps_path, uint8_t channel_num, uin
   board_external_amp_mute_control(false);
 
   return receive_object_reply(__LINE__);
+}
+
+/*--------------------------------------------------------------------------*/
+err_t AudioClass::initSynthesizer(AsSynthesizerWaveMode type,
+                                  uint8_t               channel_num,
+                                  const char           *dps_path)
+{
+  return initSynthesizer(type,
+                         channel_num,
+                         dps_path,
+                         1,
+                         1,
+                         100,
+                         1);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -2474,18 +2542,43 @@ err_t AudioClass::stopSynthesizer(void)
 
   return receive_object_reply(__LINE__);
 }
-
-/* ------------------------------------------------------------------------ */
-err_t AudioClass::setFreqSynthesizer(uint8_t channel_no, uint32_t frequency)
+err_t AudioClass::setFreqSynthesizer(uint8_t  channel_no,
+                                     uint32_t frequency,
+                                     uint16_t attack,
+                                     uint16_t decay,
+                                     uint16_t sustain,
+                                     uint16_t release)
 {
   AsSetSynthesizer set_param;
 
   set_param.channel_no = channel_no;
   set_param.frequency  = frequency;
+  set_param.attack     = attack;
+  set_param.decay      = decay;
+  set_param.sustain    = sustain;
+  set_param.release    = release;
+
+  /* Keep effect value */
+
+  m_attack[channel_no]  = attack;
+  m_decay[channel_no]   = decay;
+  m_sustain[channel_no] = sustain;
+  m_release[channel_no] = release;
 
   AS_SetMediaSynthesizer(&set_param);
 
   return receive_object_reply(__LINE__);
+}
+
+/* ------------------------------------------------------------------------ */
+err_t AudioClass::setFreqSynthesizer(uint8_t channel_no, uint32_t frequency)
+{
+  return setFreqSynthesizer(channel_no,
+                            frequency,
+                            m_attack[channel_no],
+                            m_decay[channel_no],
+                            m_sustain[channel_no],
+                            m_release[channel_no]);
 }
 
 /*--------------------------------------------------------------------------*/

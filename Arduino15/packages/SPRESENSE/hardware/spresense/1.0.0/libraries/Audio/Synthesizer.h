@@ -152,14 +152,31 @@ public:
   err_t init(
       AsSynthesizerWaveMode type,
       uint8_t channel_num,
-      uint32_t sampling_rate,
-      uint8_t bit_width,
       const char *dsp_path
+  );
+
+  err_t init(
+      AsSynthesizerWaveMode type,
+      uint8_t     channel_num,
+      const char *dsp_path,
+      uint16_t    attack,
+      uint16_t    decay,
+      uint16_t    sustain,
+      uint16_t    release
   );
 
   err_t set(
       uint8_t channel_no,
       uint32_t frequency
+  );
+
+  err_t set(
+      uint8_t channel_no,
+      uint32_t frequency,
+      uint16_t attack,
+      uint16_t decay,
+      uint16_t sustain,
+      uint16_t release
   );
 
   /**
@@ -209,6 +226,11 @@ private:
   Synthesizer(const Synthesizer&);
   Synthesizer& operator=(const Synthesizer&);
   ~Synthesizer() {}
+
+  uint16_t m_attack[AsSynthesizerMaxChannelNum];
+  uint16_t m_decay[AsSynthesizerMaxChannelNum];
+  uint16_t m_sustain[AsSynthesizerMaxChannelNum];
+  uint16_t m_release[AsSynthesizerMaxChannelNum];
 };
 
 // #endif // __cplusplus

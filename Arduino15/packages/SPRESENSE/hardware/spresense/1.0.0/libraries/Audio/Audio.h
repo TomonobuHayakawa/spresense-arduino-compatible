@@ -906,7 +906,7 @@ public:
    *
    * @details This function initialize PreProcess DSP.
    *
-   *          The formant of Initalize DSP command is not open.
+   *          The format of initalize DSP command is not open.
    *          command format and parameter values are created internally.
    *          Application has no need to create command.
    *
@@ -918,7 +918,7 @@ public:
    *
    * @details This function Set PreProcess DSP.
    *
-   *          The formant of Set DSP command is not open.
+   *          The format of set DSP command is not open.
    *          command format and parameter values are created internally.
    *          Application has no need to create command.
    *
@@ -964,16 +964,49 @@ public:
 
   void setI2s1ToSp(void);
 
-  /* @brief Synthesizer */
-
-  err_t setSynthesizer(void);
-  err_t initSynthesizer(const char *dps_path,
-                        uint8_t     channel_num,
-                        uint32_t    sampling_rate,
-                        uint8_t     bit_width);
+  /* @brief Synthesizer
+   *
+   * @details This function set synthesizer.
+   *
+   */
+  err_t setSynthesizer(bool post_enable);
+  err_t initSynthesizer(AsSynthesizerWaveMode type,
+                        uint8_t               channel_num,
+                        const char           *dps_path);
+  err_t initSynthesizer(AsSynthesizerWaveMode type,
+                        uint8_t               channel_num,
+                        const char           *dps_path,
+                        uint16_t              attack,
+                        uint16_t              decay,
+                        uint16_t              sustain,
+                        uint16_t              release);
   err_t startSynthesizer(void);
   err_t stopSynthesizer(void);
   err_t setFreqSynthesizer(uint8_t channel_no, uint32_t frequency);
+  err_t setFreqSynthesizer(uint8_t  channel_no,
+                           uint32_t frequency,
+                           uint16_t attack,
+                           uint16_t decay,
+                           uint16_t sustain,
+                           uint16_t release);
+
+  /**
+   * @brief Init Postproc DSP.
+   *
+   * @details This function initialize Postproc DSP.
+   *
+   */
+
+  err_t AudioClass::initPostProcessDsp(void *param, int size);
+
+  /**
+   * @brief Set Postproc DSP.
+   *
+   * @details This function set Postproc DSP.
+   *
+   */
+
+  err_t AudioClass::setPostProcessDsp(void *param, int size);
 
 private:
 
@@ -1005,6 +1038,11 @@ private:
   int                           m_es_size;
   WAVHEADER                     m_wav_format;
   int                           m_codec_type;
+
+  uint16_t                      m_attack[AsSynthesizerMaxChannelNum];
+  uint16_t                      m_decay[AsSynthesizerMaxChannelNum];
+  uint16_t                      m_sustain[AsSynthesizerMaxChannelNum];
+  uint16_t                      m_release[AsSynthesizerMaxChannelNum];
 
   AudioAttentionCb m_attention_callback;
 

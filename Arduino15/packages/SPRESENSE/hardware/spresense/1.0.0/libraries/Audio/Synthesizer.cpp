@@ -55,10 +55,10 @@ err_t Synthesizer::create(AudioAttentionCb attcb)
   synthe_create_param.msgq_id.mixer       = MSGQ_AUD_OUTPUT_MIX;
   synthe_create_param.msgq_id.synthesizer = MSGQ_AUD_SYNTHESIZER;
   synthe_create_param.msgq_id.mng         = MSGQ_AUD_MGR;
-  synthe_create_param.msgq_id.dsp         = MSGQ_AUD_OSCDSP;
+  synthe_create_param.msgq_id.dsp         = MSGQ_AUD_DSP;
   synthe_create_param.pool_id.input       = S0_NULL_POOL;
   synthe_create_param.pool_id.output      = S0_REND_PCM_BUF_POOL;
-  synthe_create_param.pool_id.dsp         = S0_OSC_APU_CMD_POOL;
+  synthe_create_param.pool_id.dsp         = S0_DEC_APU_CMD_POOL;
   
   bool result = AS_CreateMediaSynthesizer(&synthe_create_param,
                                           (attcb != NULL) ? attcb : attentionCallback);
@@ -95,17 +95,41 @@ err_t Synthesizer::activate(SynthesizerCallback synthcb, void *param)
 
 /*--------------------------------------------------------------------------*/
 err_t Synthesizer::init(AsSynthesizerWaveMode type,
-                        uint8_t channel_num,
-                        uint32_t sampling_rate,
-                        uint8_t bit_width,
-                        const char *dsp_path)
+                        uint8_t               channel_num,
+                        const char           *dsp_path,
+                        uint16_t              attack,
+                        uint16_t              decay,
+                        uint16_t              sustain,
+                        uint16_t              release)
 {
   AsInitSynthesizerParam initparam;
 
   initparam.type          = type;
   initparam.channel_num   = channel_num;
-  initparam.sampling_rate = sampling_rate;
-  initparam.bit_width     = bit_width;
+  initparam.sampling_rate = AS_SAMPLINGRATE_48000;
+  initparam.bit_width     = AS_BITLENGTH_16;
+  initparam.sample_size   = 240;
+  initparam.attack        = attack;
+  initparam.decay         = decay;
+  initparam.sustain       = sustain;
+  initparam.release       = release;
+
+  if (channel_num > AsSynthesizerMaxChannelNum)
+    {
+      print_err("Wrong number of channels!\n");
+      return SYNTHESIZER_ECODE_COMMAND_ERROR;
+    }
+
+  /* Keep effect value */
+
+  for (int i = 0; i < channel_num; i++)
+    {
+      m_attack[i]  = attack;
+      m_decay[i]   = decay;
+      m_sustain[i] = sustain;
+      m_release[i] = release;
+    }
+
   snprintf(initparam.dsp_path, AS_AUDIO_DSP_PATH_LEN, "%s", dsp_path);
 
   /* Init synthesizer. */
@@ -119,6 +143,20 @@ err_t Synthesizer::init(AsSynthesizerWaveMode type,
     }
 
   return SYNTHESIZER_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t Synthesizer::init(AsSynthesizerWaveMode type,
+                        uint8_t               channel_num,
+                        const char           *dsp_path)
+{
+  return init(type,
+              channel_num,
+              dsp_path,
+              1,
+              1,
+              100,
+              1);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -156,14 +194,28 @@ err_t Synthesizer::stop(void)
 
   return SYNTHESIZER_ECODE_OK;
 }
-
-/*--------------------------------------------------------------------------*/
-err_t Synthesizer::set(uint8_t channel_no, uint32_t frequency)
+err_t Synthesizer::set(uint8_t  channel_no,
+                       uint32_t frequency,
+                       uint16_t attack,
+                       uint16_t decay,
+                       uint16_t sustain,
+                       uint16_t release)
 {
   AsSetSynthesizer setparam;
 
   setparam.channel_no = channel_no;
   setparam.frequency  = frequency;
+  setparam.attack     = attack;
+  setparam.decay      = decay;
+  setparam.sustain    = sustain;
+  setparam.release    = release;
+
+  /* Keep effect value */
+
+  m_attack[channel_no]  = attack;
+  m_decay[channel_no]   = decay;
+  m_sustain[channel_no] = sustain;
+  m_release[channel_no] = release;
 
   bool result = AS_SetMediaSynthesizer(&setparam);
 
@@ -174,6 +226,17 @@ err_t Synthesizer::set(uint8_t channel_no, uint32_t frequency)
     }
 
   return SYNTHESIZER_ECODE_OK;
+}
+
+/*--------------------------------------------------------------------------*/
+err_t Synthesizer::set(uint8_t channel_no, uint32_t frequency)
+{
+  return set(channel_no,
+             frequency,
+             m_attack[channel_no],
+             m_decay[channel_no],
+             m_sustain[channel_no],
+             m_release[channel_no]);
 }
 
 /*--------------------------------------------------------------------------*/

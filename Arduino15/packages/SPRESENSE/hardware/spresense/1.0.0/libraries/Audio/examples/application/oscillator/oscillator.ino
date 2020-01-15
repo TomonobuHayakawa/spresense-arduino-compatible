@@ -29,13 +29,15 @@
 
 /* Maximum number of channels */
 
-#define CHANNEL_NUMBER        8
+#define CHANNEL_NUMBER        2
 
 /* Oscillator parameter */
 
 #define OSC_CH_NUM            CHANNEL_NUMBER
-#define OSC_BIT_LEN           AS_BITLENGTH_16
-#define OSC_SAMPLING_RATE     AS_SAMPLINGRATE_48000
+#define OSC_EFFECT_ATTACK     1
+#define OSC_EFFECT_DECAY      1
+#define OSC_EFFECT_SUSTAIN    100
+#define OSC_EFFECT_RELEASE    1
 
 /* Set volume[db] */
 
@@ -101,15 +103,21 @@ void setup()
 
   /* Activate synthesizer */
 
-  theAudio->setSynthesizer();
+  theAudio->setSynthesizer(false);
 
   /* Initialization synthesizer */
 
-  theAudio->initSynthesizer(DSPBIN_PATH, OSC_CH_NUM, OSC_SAMPLING_RATE, OSC_BIT_LEN);
+  theAudio->initSynthesizer(AsSynthesizerSinWave,
+                            OSC_CH_NUM,
+                            DSPBIN_PATH,
+                            OSC_EFFECT_ATTACK,
+                            OSC_EFFECT_DECAY,
+                            OSC_EFFECT_SUSTAIN,
+                            OSC_EFFECT_RELEASE);
 
   /* Set master volume */
 
-  theAudio->setVolume(VOLUME_MASTER, VOLUME_MASTER, VOLUME_MASTER);
+  theAudio->setVolume(VOLUME_MASTER);
 
   /* Start synthesizer */
 
@@ -142,17 +150,9 @@ void loop()
 
   theAudio->setFreqSynthesizer(0, M_C_4);
   theAudio->setFreqSynthesizer(1, M_C_4);
-  theAudio->setFreqSynthesizer(2, M_E_4);
-  theAudio->setFreqSynthesizer(3, M_E_4);
-  theAudio->setFreqSynthesizer(4, M_G_4);
-  theAudio->setFreqSynthesizer(5, M_G_4);
 
   sleep(2);
 
   theAudio->setFreqSynthesizer(0, 0);
   theAudio->setFreqSynthesizer(1, 0);
-  theAudio->setFreqSynthesizer(2, 0);
-  theAudio->setFreqSynthesizer(3, 0);
-  theAudio->setFreqSynthesizer(4, 0);
-  theAudio->setFreqSynthesizer(5, 0);
 }
