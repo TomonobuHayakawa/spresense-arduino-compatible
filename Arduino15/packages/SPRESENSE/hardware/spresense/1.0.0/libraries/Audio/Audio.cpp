@@ -2368,8 +2368,6 @@ err_t AudioClass::begin_synthesizer(void)
   syn.msgq_id.synthesizer = MSGQ_AUD_SYNTHESIZER;
   syn.msgq_id.mng         = MSGQ_AUD_APP;
   syn.msgq_id.dsp         = MSGQ_AUD_DSP;
-  syn.msgq_id.mixer       = MSGQ_AUD_OUTPUT_MIX;
-  syn.pool_id.input       = S0_NULL_POOL;
   syn.pool_id.output      = S0_REND_PCM_BUF_POOL;
   syn.pool_id.dsp         = S0_DEC_APU_CMD_POOL;
 
@@ -2476,15 +2474,18 @@ err_t AudioClass::initSynthesizer(AsSynthesizerWaveMode type,
 {
   AsInitSynthesizerParam  init;
 
-  init.type          = type;
-  init.channel_num   = channel_num;
-  init.sampling_rate = AS_SAMPLINGRATE_48000;
-  init.bit_width     = AS_BITLENGTH_16;
-  init.sample_size   = 240;
-  init.attack        = attack;
-  init.decay         = decay;
-  init.sustain       = sustain;
-  init.release       = release;
+  init.type                = type;
+  init.channel_num         = channel_num;
+  init.sampling_rate       = AS_SAMPLINGRATE_48000;
+  init.bit_width           = AS_BITLENGTH_16;
+  init.data_path           = AsSynthesizerDataPathMessage;
+  init.dest.msg.id         = MSGQ_AUD_OUTPUT_MIX;
+  init.dest.msg.identifier = OutputMixer0;
+  init.sample_size         = 240;
+  init.attack              = attack;
+  init.decay               = decay;
+  init.sustain             = sustain;
+  init.release             = release;
 
   if (channel_num > AsSynthesizerMaxChannelNum)
     {
