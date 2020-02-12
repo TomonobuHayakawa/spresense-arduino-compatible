@@ -68,4 +68,34 @@ application / capture_hpadc
 になります。
 
 
+## M11S関連プロジェクト向け  
+
+M11Sを使用したソリューションの試作トライアル向けにパッケージを作成しています。  
+Arduinoから、M11Sをお試しできるように、SPI5をDMAモードで動かせるようにしてあります。
+
+
+α版のinstallは、  
+
+Arduinoのファイル / 環境設定 の中の
+追加ボードマネージャのURLに、
+https://github.com/TomonobuHayakawa/spresense-arduino-compatible/releases/download/common/package_spresense_M11S_index.json
+を追加してください。
+
+これを追加すると、ボードマネージャの中に、
+
+Spresense M11S
+
+というボードが新たに選択できます。
+
+M11S用のスケッチは、こちらへは入れていません。
+
+https://github.com/TomonobuHayakawa/Spresense-Playground/tree/master/sketches/M11S
+
+の下に、
+
+Jpeg_ESP8266_CamServer :WiFi Camera サンプル
+Jpeg_shot_with_SD :SDカード書き込みサンプル
+
+を置いておきました。
+
 
