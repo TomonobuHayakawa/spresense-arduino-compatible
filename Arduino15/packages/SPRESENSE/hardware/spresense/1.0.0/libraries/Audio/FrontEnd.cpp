@@ -212,7 +212,7 @@ err_t FrontEnd::init(uint8_t channel_number,
                      uint8_t data_path,
                      AsDataDest dest)
 {
-  return init(channel_number, bit_length, samples_per_frame, AsDataPathMessage, dest, AsMicFrontendPreProcThrough, "");
+  return init(channel_number, bit_length, samples_per_frame, data_path, dest, AsMicFrontendPreProcThrough, "");
 }
 
 /*--------------------------------------------------------------------------*/
