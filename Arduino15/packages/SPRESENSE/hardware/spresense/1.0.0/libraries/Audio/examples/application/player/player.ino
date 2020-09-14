@@ -17,10 +17,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <SDHCI.h>
 #include <Audio.h>
-#include <SD.h>
 
+SDClass theSD;
 AudioClass *theAudio;
+
 File myFile;
 
 bool ErrEnd = false;
@@ -53,13 +55,9 @@ static void audio_attention_cb(const ErrorAttentionParam *atprm)
  */
 void setup()
 {
-  /* Initialize SD Card */
-  while (!SD.begin()) {
-    ; /* wait until SD card is mounted. */
-  }
-
   // start audio system
   theAudio = AudioClass::getInstance();
+
   theAudio->begin(audio_attention_cb);
 
   puts("initialization Audio Library");
@@ -90,9 +88,8 @@ void setup()
       exit(1);
     }
 
-  /* Open the file. Note that only one file can be open at a time,
-     so you have to close this one before opening another. */
-  myFile = SD.open("Sound.mp3");
+  /* Open file placed on SD card */
+  myFile = theSD.open("Sound.mp3");
 
   /* Verify file open */
   if (!myFile)
