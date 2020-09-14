@@ -19,7 +19,6 @@
 
 #include <MediaRecorder.h>
 #include <MemoryUtil.h>
-#include <SD.h>
 
 MediaRecorder *theRecorder;
 

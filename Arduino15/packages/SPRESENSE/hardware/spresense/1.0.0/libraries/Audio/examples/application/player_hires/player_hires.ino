@@ -19,7 +19,6 @@
 
 #include <SDHCI.h>
 #include <Audio.h>
-#include <SDHCI.h>
 
 SDClass theSD;
 AudioClass *theAudio;

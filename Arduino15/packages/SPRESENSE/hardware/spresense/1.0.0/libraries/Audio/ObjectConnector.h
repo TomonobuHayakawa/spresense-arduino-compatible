@@ -46,6 +46,7 @@ public:
     ConnectToMediaRecorder = 0,
     ConnectToRecognizer,
     ConnectToOutputMixer,
+    ConnectToApplication,
   };
 
   ObjectConnector() {}
@@ -72,7 +73,12 @@ public:
           ret.msg.msgtype = MSG_AUD_MIX_CMD_DATA;
           break;
 
-        default:
+        case ConnectToApplication: 
+          ret.msg.msgqid  = MSGQ_AUD_OUTPUT_MIX;
+          ret.msg.msgtype = MSG_AUD_MIX_CMD_DATA;
+          break;
+
+      	default:
           ret.msg.msgqid  = MSGQ_AUD_RECORDER;
           ret.msg.msgtype = MSG_AUD_MRC_CMD_ENCODE;
           break;
