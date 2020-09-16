@@ -17,7 +17,7 @@ https://github.com/sonydevworld/spresense-arduino-compatible/blob/master/README.
 これらをお試し頂いて、フィードバックをもらうことを目的としています。  
 
 
-## 楽器用のプロジェクト向け  
+## 楽器用のプロジェクト向け (v2.0.2)
 
 楽器作成などを行うために、以下の機能を入れ込んでパッケージを作成しています。  
    - レコグナイザー機能 ※ライブラリ別。（契約メンバのみ）  
@@ -36,6 +36,9 @@ https://github.com/TomonobuHayakawa/spresense-arduino-compatible/releases/downlo
 これを追加すると、ボードマネージャの中に、  
 Spresense Instrument  
 というボードが新たに選択できます。  
+
+ボードマネージャ経由で、"Spresense Instrument" をインストールすることで、以降、このパッケージが使えます。
+ボード選択で、"Spresense Instrument" を選択してご使用ください。
 
 楽器用のスケッチは、  
 
@@ -60,6 +63,9 @@ https://github.com/TomonobuHayakawa/spresense-arduino-compatible/releases/downlo
 これを追加すると、ボードマネージャの中に、  
 Spresense HighSpeedADC  
 というボードが新たに選択できます。  
+
+ボードマネージャ経由で、"Spresense HighSpeedADC" をインストールすることで、以降、このパッケージが使えます。
+ボード選択で、"Spresense HighSpeedADC" を選択してご使用ください。
 
 サンプルスケッチは、  スケッチ例 -> Spresense HighSpeedADC用のスケッチ例の中の Sensingの中にある
 
@@ -86,6 +92,9 @@ https://github.com/TomonobuHayakawa/spresense-arduino-compatible/releases/downlo
 Spresense M11S
 
 というボードが新たに選択できます。
+
+ボードマネージャ経由で、"Spresense M11S" をインストールすることで、以降、このパッケージが使えます。
+ボード選択で、"Spresense M11S" を選択してご使用ください。
 
 M11S用のスケッチは、こちらへは入れていません。
 
