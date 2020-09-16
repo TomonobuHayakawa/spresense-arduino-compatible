@@ -27,7 +27,7 @@
 #include <nuttx/init.h>
 #include <nuttx/arch.h>
 #include <arch/chip/pm.h>
-#include <arch/chip/cxd56_audio.h>  /* To be deleted: Supported by AudioManager */
+#include <arch/board/cxd56_audio.h>  /* To be deleted: Supported by AudioManager */
 #include <arch/board/board.h>
 
 #include "Audio.h"
