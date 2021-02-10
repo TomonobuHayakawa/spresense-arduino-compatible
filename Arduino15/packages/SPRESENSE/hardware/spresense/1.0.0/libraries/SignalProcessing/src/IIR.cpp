@@ -19,23 +19,45 @@
 
 #include "IIR.h"
 
-RingBuff ringbuf[MAX_CHANNEL_NUM](INPUT_BUFFER);
-
 bool IIRClass::begin(filterType_t type, int channel, int cutoff, float q)
 {
+  begin(type, channel, cutoff, q, DEFAULT_FRAMSIZE, Planar);
+}
+
+bool IIRClass::begin(filterType_t type, int channel, int cutoff, float q, int sample, format_t output)
+{
   if(channel > MAX_CHANNEL_NUM) return false;
+  if(sample < MIN_FRAMSIZE) return false;
 
   m_channel = channel;
+  m_framesize = sample;
+  for(int i=0;i<m_channel;i++){
+    m_ringbuff[i] = new RingBuff(channel*sizeof(q15_t)*sample*3);
+    if(!m_ringbuff[i]) return false;
+  }
+
+  /* Temporary buffer */
+  m_tmpInBuff  = new float[m_framesize];
+  m_tmpOutBuff = new float[m_framesize];
 
   if(create_coef(type, cutoff, q) == false){
     return false;
   }
 
   for (int i = 0; i < channel; i++) {
-    arm_biquad_cascade_df2T_init_f32(&S[i],1,coef,buffer);
+    arm_biquad_cascade_df2T_init_f32(&S[i],1,m_coef,m_buffer);
   }
 
   return true;
+}
+
+void IIRClass::end()
+{
+  for(int i=0;i<m_channel;i++){
+    delete m_ringbuff[i];
+  }
+  delete m_tmpInBuff;
+  delete m_tmpOutBuff;
 }
 
 bool IIRClass::create_coef(filterType_t type, int cutoff, float q)
@@ -50,12 +72,9 @@ bool IIRClass::create_coef(filterType_t type, int cutoff, float q)
   case (TYPE_LPF):
   case (TYPE_HPF):
     k0 = sin(w) / (2.0f * q);
-    k1 = 1.0f - cos(w);
 
     a0 =  1.0f + k0;
     a2 =  1.0f - k0;
-    b0 =  k1 / 2.0f;
-    b2 = (k0) / 2.0f;
 
     break;
   case (TYPE_BPF):
@@ -70,10 +89,16 @@ bool IIRClass::create_coef(filterType_t type, int cutoff, float q)
 
   switch(type){
   case TYPE_LPF:
-    b1 =  k1;
+    k1 = 1.0f - cos(w);
+    b0 = k1 / 2.0f;
+    b1 = k1;
+    b2 = k1 / 2.0f;
     break;
   case TYPE_HPF:
-    b1 =  -k1;
+    k1 = 1.0f + cos(w);
+    b0 = k1 / 2.0f;
+    b1 = -k1;
+    b2 = k1 / 2.0f;
     break;
   case TYPE_BPF:
     b0 =  k0;
@@ -89,11 +114,11 @@ bool IIRClass::create_coef(filterType_t type, int cutoff, float q)
     return false;
   }
 
-  coef[0] = b0/a0;
-  coef[1] = b1/a0;
-  coef[2] = b2/a0;
-  coef[3] = -(a1/a0);
-  coef[4] = -(a2/a0);
+  m_coef[0] = b0/a0;
+  m_coef[1] = b1/a0;
+  m_coef[2] = b2/a0;
+  m_coef[3] = -(a1/a0);
+  m_coef[4] = -(a2/a0);
 
   return true;
 }
@@ -103,14 +128,14 @@ bool IIRClass::put(q15_t* pSrc, int sample)
 {
   /* Ringbuf size check */
   if(m_channel > MAX_CHANNEL_NUM) return false;
-  if(sample > ringbuf[0].remain()) return false;
+  if(sample > m_ringbuff[0]->remain()) return false;
 
   if (m_channel == 1) {
     /* the faster optimization */
-    ringbuf[0].put((q15_t*)pSrc, sample);
+    m_ringbuff[0]->put((q15_t*)pSrc, sample);
   } else {
     for (int i = 0; i < m_channel; i++) {
-      ringbuf[i].put(pSrc, sample, m_channel, i);
+      m_ringbuff[i]->put(pSrc, sample, m_channel, i);
     }
   }
   return  true;
@@ -118,20 +143,20 @@ bool IIRClass::put(q15_t* pSrc, int sample)
 
 bool IIRClass::empty(int channel)
 {
-   return (ringbuf[channel].stored() < FRAMSIZE);
+   return (m_ringbuff[channel]->stored() < m_framesize);
 }
 
 int IIRClass::get(q15_t* pDst, int channel)
 {
 
   if(channel >= m_channel) return false;
-  if (ringbuf[channel].stored() < FRAMSIZE) return 0;
+  if (m_ringbuff[channel]->stored() < m_framesize) return 0;
 
   /* Read from the ring buffer */
-  ringbuf[channel].get(tmpInBuf, FRAMSIZE);
+  m_ringbuff[channel]->get(m_tmpInBuff, m_framesize);
 
-  arm_biquad_cascade_df2T_f32(&S[channel], tmpInBuf, tmpOutBuf, FRAMSIZE);
-  arm_float_to_q15(tmpOutBuf, pDst, FRAMSIZE);
+  arm_biquad_cascade_df2T_f32(&S[channel], m_tmpInBuff, m_tmpOutBuff, m_framesize);
+  arm_float_to_q15(m_tmpOutBuff, pDst, m_framesize);
 
-  return FRAMSIZE;
+  return m_framesize;
 }

@@ -28,6 +28,8 @@
 
 /* channel number */
 const int g_channel = 1;
+//const int g_framesize = 768;
+const int g_framesize = 384;
 
 IIRClass HPF;
 
@@ -59,7 +61,8 @@ void setup()
   /* receive with non-blocking */
 //  MP.RecvTimeout(MP_RECV_POLLING);
   MP.RecvTimeout(100000);
-  HPF.begin(TYPE_HPF,g_channel,1000,sqrt(0.5));
+  HPF.begin(TYPE_HPF,g_channel,100,sqrt(0.5),g_framesize,Planar);
+//  HPF.begin(TYPE_HPF,g_channel,1000,sqrt(0.5));
 }
 
 #define RESULT_SIZE 4
@@ -71,8 +74,8 @@ void loop()
   Request  *request;
   static Result result[RESULT_SIZE];
 
-  static q15_t pDst[FRAMSIZE];
-  static q15_t out_buffer[RESULT_SIZE][FRAMSIZE*g_channel];
+  static q15_t pDst[g_framesize*2];
+  static q15_t out_buffer[RESULT_SIZE][g_framesize*2*g_channel];
   static int pos=0;
 
   /* Receive PCM captured buffer from MainCore */
@@ -88,6 +91,7 @@ void loop()
   while (!HPF.empty(0)) {
     for (int i = 0; i < g_channel; i++) {
       cnt = HPF.get(pDst,i);
+      cnt += HPF.get(&pDst[g_framesize],i);
       /* support only mono channel */
       memcpy(&out_buffer[pos][0],pDst,cnt*2);
     }

@@ -35,15 +35,19 @@
 #define BITLEN 16
 //#define BITLEN 32
 
-/* Max sample of frame */
-#define FRAMSIZE 768
+/* Execute sample of frame */
+#define DEFAULT_FRAMSIZE 768
+
+/* Min sample of frame */
+#define MIN_FRAMSIZE 256
+
+/* Execute sample of frame */
+#define FRAMSIZE DEFAULT_FRAMSIZE
 
 /* Number of channels */
-#define MAX_CHANNEL_NUM 1
+//#define MAX_CHANNEL_NUM 1
 //#define MAX_CHANNEL_NUM 2
-//#define MAX_CHANNEL_NUM 4
-
-#define INPUT_BUFFER (MAX_CHANNEL_NUM*sizeof(q15_t)*FRAMSIZE*3)
+#define MAX_CHANNEL_NUM 4
 
 /*------------------------------------------------------------------*/
 /* Type Definition                                                  */
@@ -56,6 +60,11 @@ typedef enum e_filterType {
   TYPE_BEF
 } filterType_t;
 
+/* FILTER TYPE */
+typedef enum e_format {
+  Interleave,
+  Planar
+} format_t;
 
 /*------------------------------------------------------------------*/
 /* Input buffer                                                      */
@@ -64,23 +73,27 @@ class IIRClass
 {
 public:
   bool begin(filterType_t type, int channel, int cutoff, float q);
+  bool begin(filterType_t type, int channel, int cutoff, float q, int sample, format_t output);
   bool put(q15_t* pSrc, int size);
   int  get(q15_t* pDst, int channel);
-  void end(){}
+  void end();
   bool empty(int channel);
 
 private:
 
   int m_channel;
+  int m_framesize;
 
   arm_biquad_cascade_df2T_instance_f32 S[MAX_CHANNEL_NUM];
 
-  float32_t coef[5];
-  float32_t buffer[4];
+  float32_t m_coef[5];
+  float32_t m_buffer[4];
+
+  RingBuff* m_ringbuff[MAX_CHANNEL_NUM];
 
   /* Temporary buffer */
-  float tmpInBuf[FRAMSIZE];
-  float tmpOutBuf[FRAMSIZE];
+  float* m_tmpInBuff;
+  float* m_tmpOutBuff;
 
   bool create_coef(filterType_t, int cutoff, float q);
 
