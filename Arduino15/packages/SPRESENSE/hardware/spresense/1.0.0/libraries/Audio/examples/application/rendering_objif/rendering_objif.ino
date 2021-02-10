@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <arch/board/board.h>
+
 #define READSAMPLE (240)
 #define BYTEWIDTH (2)
 #define CHNUM (2)
@@ -129,7 +131,7 @@ static enum State {
   Stopping,
 } s_state = Ready;
 
-static bool getFrame(AsPcmDataParam *pcm)
+static bool getFrame(AsPcmDataParam *pcm, bool direct_read)
 {
   /* Alloc MemHandle */
   if (pcm->mh.allocSeg(S0_REND_PCM_BUF_POOL, READSIZE) != ERR_OK) {
@@ -140,14 +142,23 @@ static bool getFrame(AsPcmDataParam *pcm)
   pcm->identifier = 0;
   pcm->callback = 0;
   pcm->bit_length = 16;
-  pcm->size = myBuffer.readbuf((uint8_t *)pcm->mh.getPa());
+  pcm->size = (direct_read) ? myFile.read((uint8_t *)pcm->mh.getPa(), READSIZE) : myBuffer.readbuf((uint8_t *)pcm->mh.getPa());
   pcm->sample = pcm->size / BYTEWIDTH / CHNUM;  
   pcm->is_end = (pcm->size < READSIZE);
   pcm->is_valid = (pcm->size > 0);
 
+  if (pcm->size < 0) {
+    puts("Cannot read SD card!");
+    return false;
+  }
+
   return true;
 }
 
+static bool getFrame(AsPcmDataParam *pcm)
+{
+  return getFrame(pcm, false);
+}
 
 static bool start(uint8_t no)
 {
@@ -179,7 +190,7 @@ static bool start(uint8_t no)
   /* Start rendering. */
   for (int i = 0; i < RREREQUEST; i++) {
     AsPcmDataParam pcm_param;
-    if (!getFrame(&pcm_param)) {
+    if (!getFrame(&pcm_param, true)) {
       break;
     }
 
@@ -214,7 +225,7 @@ static bool restart()
 
   for (int i = 0; i < RREREQUEST; i++) {
     AsPcmDataParam pcm_param;
-    if (getFrame(&pcm_param)) {
+    if (getFrame(&pcm_param, true)) {
       /* Send PCM */
       int err = theMixer->sendData(OutputMixer0,
                                    outmixer_send_callback,
@@ -345,8 +356,12 @@ void setup()
   initMemoryPools();
   createStaticPools(MEM_LAYOUT_PLAYER);
 
-  /* Use SD card */
-  theSD.begin();
+  /* Initialize SD */
+  while (!theSD.begin())
+    {
+      /* wait until SD card is mounted. */
+      Serial.println("Insert SD card.");
+    }
 
   /* Start audio system */
   theMixer  = OutputMixer::getInstance();
@@ -369,6 +384,9 @@ void setup()
 
   /* Set main volume */
   theMixer->setVolume(0, 0, 0);
+
+  /* Unmute */
+  board_external_amp_mute_control(false);
 
   printf("setup() complete\n");
 }
@@ -400,7 +418,7 @@ void loop()
 
   if (ErrEnd) {
     printf("Error End\n");
-    goto stop_player;
+    goto stop_rendering;
   }
 
   /* Menu operation */
@@ -425,9 +443,9 @@ void loop()
           s_state = Stopping;
           break;
           
-          default:
-            break;
-        }
+        default:
+          break;
+      }
     }
 
   /* Processing in accordance with the state */
@@ -464,12 +482,13 @@ void loop()
      being processed at the same time by Application.
    */
 
-  usleep(1 * 1000);
-
   return;
 
-stop_player:
-  printf("Exit player\n");
+stop_rendering:
+  board_external_amp_mute_control(true); 
   myFile.close();
+  theMixer->deactivate(OutputMixer0);
+  theMixer->end();
+  puts("Exit Rendering");
   exit(1);
 }

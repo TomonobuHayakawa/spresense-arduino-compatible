@@ -66,7 +66,12 @@ static const uint32_t sc_prestore_frames = 10;
  
 void setup()
 {
-  theSD.begin();
+  /* Initialize SD */
+  while (!theSD.begin())
+    {
+      /* wait until SD card is mounted. */
+      Serial.println("Insert SD card.");
+    }
 
   // Get wav file info
 
@@ -214,8 +219,10 @@ void loop()
   return;
 
 stop_player:
-  puts("End.");
   theAudio->stopPlayer(AudioClass::Player0);
   myFile.close();
+  theAudio->setReadyMode();
+  theAudio->end();
+  printf("Exit player\n");
   exit(1);
 }

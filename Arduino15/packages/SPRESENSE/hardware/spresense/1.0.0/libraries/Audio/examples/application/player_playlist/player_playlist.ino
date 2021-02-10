@@ -250,9 +250,12 @@ void setup()
   printf("Repeat=%s\n", (preset.repeat) ? "On" : "Off");
   printf("Auto=%s\n", (preset.autoplay) ? "On" : "Off");
 
-  /* Use SD card */
-
-  theSD.begin();
+  /* Initialize SD */
+  while (!theSD.begin())
+    {
+      /* wait until SD card is mounted. */
+      Serial.println("Insert SD card.");
+    }
 
   /* Initialize playlist */
 
@@ -468,7 +471,10 @@ void loop()
   return;
 
 stop_player:
-  printf("Exit player\n");
+  theAudio->stopPlayer(AudioClass::Player0);
   myFile.close();
+  theAudio->setReadyMode();
+  theAudio->end();
+  printf("Exit player\n");
   exit(1);
 }

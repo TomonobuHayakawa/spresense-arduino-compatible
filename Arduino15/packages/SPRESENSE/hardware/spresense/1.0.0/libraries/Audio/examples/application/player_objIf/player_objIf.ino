@@ -142,12 +142,9 @@ void setup()
   theMixer  = OutputMixer::getInstance();
 
   thePlayer->begin();
+  theMixer->begin();
   
   puts("initialization Audio Library");
-
-  /* Activate Baseband */
-
-  theMixer->activateBaseband();
 
   /* Create Objects */
 
@@ -178,6 +175,13 @@ void setup()
    * Search for MP3 codec in "/mnt/sd0/BIN" directory
    */
   thePlayer->init(MediaPlayer::Player0, AS_CODECTYPE_MP3, "/mnt/sd0/BIN", AS_SAMPLINGRATE_48000, AS_CHANNEL_STEREO);
+
+  /* Initialize SD */
+  while (!theSD.begin())
+    {
+      /* wait until SD card is mounted. */
+      Serial.println("Insert SD card.");
+    }
 
   myFile = theSD.open("Sound.mp3");
 
@@ -248,8 +252,9 @@ void loop()
   return;
 
 stop_player:
-  sleep(1);
   thePlayer->stop(MediaPlayer::Player0);
   myFile.close();
+  thePlayer->deactivate(MediaPlayer::Player0);
+  thePlayer->end();
   exit(1);
 }

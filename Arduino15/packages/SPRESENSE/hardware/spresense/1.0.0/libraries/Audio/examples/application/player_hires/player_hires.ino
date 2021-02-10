@@ -90,6 +90,13 @@ void setup()
       exit(1);
     }
 
+  /* Initialize SD */
+  while (!theSD.begin())
+    {
+      /* wait until SD card is mounted. */
+      Serial.println("Insert SD card.");
+    }
+
   /* Open file placed on SD card */
   myFile = theSD.open("HiResSound.wav");
 
@@ -165,5 +172,7 @@ void loop()
 stop_player:
   theAudio->stopPlayer(AudioClass::Player0);
   myFile.close();
+  theAudio->setReadyMode();
+  theAudio->end();
   exit(1);
 }
