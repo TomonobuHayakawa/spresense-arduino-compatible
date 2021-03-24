@@ -68,9 +68,9 @@ static const uint32_t recognizer_time = 10;
 
 
 /**
- * @brief Recorder done callback procedure
+ * @brief FrontEnd done callback procedure
  *
- * @param [in] event        AsRecorderEvent type indicator
+ * @param [in] event        AsFrontEndEvent type indicator
  * @param [in] result       Result
  * @param [in] sub_result   Sub result
  *
