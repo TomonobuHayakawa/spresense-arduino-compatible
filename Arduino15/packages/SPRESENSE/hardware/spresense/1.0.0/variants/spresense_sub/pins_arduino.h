@@ -29,7 +29,7 @@
 
 #include <cxd56_pinconfig.h>
 
-#define NUM_DIGITAL_PINS    (45)
+#define NUM_DIGITAL_PINS    (50)
 #define NUM_ANALOG_INPUTS   (6)
 #define PIN_NOT_ASSIGNED    (0xFF)
 
@@ -92,6 +92,12 @@
 #define PIN_D42     _DIGITAL_PIN(42)
 #define PIN_D43     _DIGITAL_PIN(43)
 #define PIN_D44     _DIGITAL_PIN(44)
+#define PIN_D45     _DIGITAL_PIN(45)
+#define PIN_D46     _DIGITAL_PIN(46)
+#define PIN_D47     _DIGITAL_PIN(47)
+#define PIN_D48     _DIGITAL_PIN(48)
+#define PIN_D49     _DIGITAL_PIN(49)
+#define PIN_D50     _DIGITAL_PIN(50)
 
 // LED - 0x4N
 #define PIN_LED0    _LED_PIN(0)
